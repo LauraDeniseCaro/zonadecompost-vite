@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Zona de Compost</title>
+  <!-- METADATOS DE PREVISUALIZACIÓN (OPEN GRAPH / SOCIAL SHARE) -->
+  <meta name="description"
+    content="Servicio de recolección de residuos orgánicos domiciliarios y compostaje en San Carlos de Bariloche. Transformamos residuos en vida." />
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://zonadecompost.vercel.app" />
+  <meta property="og:title" content="Zona de Compost - Bariloche" />
+  <meta property="og:description"
+    content="Servicio de recolección de orgánicos domiciliarios y compostaje. ¡Súmate a transformar residuos en vida!" />
+  <meta property="og:image" content="https://zonadecompost.vercel.app/img/og-preview.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="es_AR" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Zona de Compost - Bariloche" />
+  <meta name="twitter:description"
+    content="Servicio de recolección de orgánicos domiciliarios y compostaje en Bariloche." />
+  <meta name="twitter:image" content="https://zonadecompost.vercel.app/img/og-preview.jpg" />
+  
+  <link rel="icon" type="image/webp" href="img/logo.webp" />
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+  
+  <!-- LIBRERÍAS EXTERNAS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    window.alert = function (mensaje) {
+      Swal.fire({
+        text: mensaje,
+        confirmButtonColor: '#16a34a',
+        confirmButtonText: 'Entendido'
+      });
+    };
+  </script>
+</head>
+
+<body class="pagina-admin">
+  <!-- HEADER ADMIN -->
+  <header class="header-principal">
+    <a href="#" class="logo-container">
+      <img src="img/logo.webp" alt="Logo" class="logo-img" />
+      <span class="logo-texto"><i class="ri-shield-check-line icon-lg"></i> Panel Admin</span>
+    </a>
+    <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">
+      <i class="ri-logout-box-r-line icon"></i> Cerrar Sesión
+    </button>
+  </header>
+
+  <main class="contenedor-principal">
+    <!-- ACORDEÓN 1: GESTIONAR CLIENTE / MÉTRICAS / CUENTA -->
+    <div class="acordeon-item">
+      <button class="acordeon-header" onclick="toggleAcordeon('acc-buscar', this)">
+        <span><i class="ri-scales-3-line icon"></i>Gestionar Cliente</span>
+        <i class="ri-arrow-down-s-line icon flecha"></i>
+      </button>
+
+      <div id="acc-buscar" class="acordeon-contenido seccion tarjeta-primario">
+
+        <!-- CAMPO DE BÚSQUEDA -->
+        <div class="form-group" id="cajaInputBusquedaAdmin">
+          <label for="buscarClienteInput">Buscar Cliente (Nombre o Celular):</label>
+          <input type="tel" inputmode="numeric" class="form-control" placeholder="Ej: Juan o 456789"
+            autocomplete="off">
+          <div id="resultadosBusquedaAdmin" class="resultados-busqueda-dropdown admin-oculto"></div>
+        </div>
+
+        <!-- PANEL DEL CLIENTE SELECCIONADO -->
+        <div id="cajaClienteSeleccionadoAdmin" class="panel-cliente-card admin-oculto">
+          <input type="hidden" id="clienteSeleccionadoId">
+
+          <!-- DATOS RESUMIDOS DEL CLIENTE -->
+          <div id="textoClienteSeleccionado" class="info-cliente-resumen admin-resumen-cliente"></div>
+
+          <!-- GENERADOR DE STORY ADMIN -->
+          <div class="admin-story-controls">
+            <label for="selectAnioStoryAdmin">Generar Resumen de Impacto:</label>
+            <div class="admin-story-actions">
+              <select id="selectAnioStoryAdmin" class="form-control">
+                <option value="historico">Histórico (Total acumulado)</option>
+                <option value="2026">Año 2026</option>
+                <option value="2027">Año 2027</option>
+                <option value="2028">Año 2028</option>
+              </select>
+              <button type="button" id="btnDescargarStoryAdmin" class="btn-app btn-story-admin">
+                <i class="ri-download-2-line"></i> Descargar Imagen
+              </button>
+            </div>
+            <p class="admin-story-help">Genera la imagen .png para enviarle al cliente por WhatsApp.</p>
+          </div>
+
+          <!-- BOTONES DE NAVEGACIÓN Y EDICIÓN -->
+          <div class="admin-fila-acciones">
+            <button type="button" id="btnToggleEditarCliente" class="btn-app btn-app-editar admin-btn-flex">
+              <i class="ri-edit-line"></i> Editar Perfil
+            </button>
+            <button type="button" id="btnBuscarOtroCliente" class="btn-app btn-app-secundario admin-btn-flex">
+              <i class="ri-search-line"></i> Buscar otro
+            </button>
+          </div>
+
+          <!-- FORMULARIO DE EDICIÓN (DESPLEGABLE / OCULTO POR DEFECTO) -->
+          <div id="formEditarPerfilCliente" class="admin-panel-edicion">
+            <h4 class="admin-subtitulo"><i class="ri-user-settings-line"></i> Editar
+              Datos de Registro</h4>
+
+            <div class="form-group">
+              <label>Editar Zona:</label>
+              <select id="editZona" class="form-control">
+                <!-- Se puebla dinámicamente desde JS -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Editar Dirección:</label>
+              <input type="text" id="editDireccion" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label>Celular Secundario / Pareja (6 dígitos):</label>
+              <input type="text" id="editCeluSecundario" class="form-control" placeholder="Ej: 123456">
+            </div>
+
+            <div class="form-group">
+              <label>Fecha de Inicio del Servicio:</label>
+              <input type="date" id="editFechaInicio" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label>Baldes Compostados:</label>
+              <input type="number" id="editBaldes" class="form-control" value="0">
+            </div>
+
+            <div class="admin-fila-botones">
+              <button type="button" id="btnGuardarEdicion" class="btn-app btn-app-guardar admin-btn-guardar">
+                <i class="ri-save-line"></i> Guardar Cambios
+              </button>
+              <button type="button" id="btnEliminarCliente" class="btn-app btn-app-eliminar admin-btn-eliminar">
+                <i class="ri-delete-bin-line"></i> Eliminar
+              </button>
+            </div>
+          </div>
+
+          <!-- ACCIONES RÁPIDAS (KILOS / BALDES) + ESTADO DE CUENTA -->
+          <div class="admin-panel-operativo">
+
+            <!-- SECCIÓN 1: KILOS Y BALDES -->
+            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-recycle-line"></i> Carga manual de
+              Kilos y Baldes</h4>
+            <div class="admin-grid-2">
+              <div class="form-group">
+                <label for="kilosASumarInput">Kilos A Sumar:</label>
+                <input type="number" step="0.1" id="kilosASumarInput" class="form-control" value="0">
+              </div>
+              <div class="form-group">
+                <label for="baldesASumarInput">Baldes A Sumar:</label>
+                <input type="number" step="1" id="baldesASumarInput" class="form-control" value="0">
+              </div>
+            </div>
+            <button type="button" id="btnSumarKilosYBaldes" class="btn-app btn-app-accion admin-btn-ancho-completo">
+              <i class="ri-add-circle-line"></i> Sumar Kilos y Baldes
+            </button>
+
+            <hr class="admin-separador">
+
+            <!-- SECCIÓN 2: RECOLECCIONES PENDIENTES DE PAGO -->
+            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-money-dollar-circle-line"></i>
+              Recolecciones Pendientes de Pago</h4>
+            <div id="contenedorDeudasClienteAdmin">
+              <p class="texto-suave">Seleccioná un cliente para ver su estado de cuenta.</p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ACORDEÓN 2: HOJA DE RUTA -->
+    <div class="acordeon-item">
+      <button class="acordeon-header" onclick="toggleAcordeon('acc-hoja', this)">
+        <span><i class="ri-route-line icon"></i> Hoja de Ruta Activa</span>
+        <i class="ri-arrow-down-s-line icon flecha"></i>
+      </button>
+
+      <div id="acc-hoja" class="acordeon-contenido seccion tarjeta-seccion">
+        <div class="barra-acciones-tabla">
+          <span class="texto-suave">Listado general de retiros programados:</span>
+          <div class="admin-barra-botones">
+            <button id="btnDescargarCSV" class="btn-actualizar-tabla admin-btn-csv-ruta">
+              <i class="ri-download-line"></i> CSV
+            </button>
+            <button class="btn-actualizar-tabla" onclick="cargarHojaRutaAdmin()">
+              <i class="ri-refresh-line"></i> Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="contenedor-tabla-elegante">
+          <table class="tabla-admin">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Dirección</th>
+                <th>Turno</th>
+                <th class="admin-texto-centro">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaHojaRutaBody">
+              <tr>
+                <td colspan="4" class="texto-suave admin-estado-tabla">
+                  Cargando pedidos pendientes...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACORDEÓN 3: HABILITAR Y GESTIONAR TURNOS -->
+    <div class="acordeon-item">
+      <button class="acordeon-header" onclick="toggleAcordeon('acc-turno', this)">
+        <span><i class="ri-calendar-event-line icon"></i> Publicar y Gestionar Turnos</span>
+        <i class="ri-arrow-down-s-line icon flecha"></i>
+      </button>
+
+      <div id="acc-turno" class="acordeon-contenido seccion tarjeta-primario">
+        <div class="panel-config-agenda">
+          <h3 class="titulo-config"><i class="ri-time-line"></i> Configuración de Agenda</h3>
+          <div class="flex-config">
+            <label for="horaLimiteAdmin" class="label-config">Cierre de reservas (día anterior):</label>
+            <input type="time" id="horaLimiteAdmin" class="input-time-config" value="19:00">
+            <button type="button" id="btnGuardarHoraLimite" class="btn-guardar-config">
+              <i class="ri-save-line"></i> Guardar Horario
+            </button>
+          </div>
+        </div>
+
+        <label for="adminZona">Zona:</label>
+        <select id="adminZona"></select>
+
+        <label for="adminFecha">Seleccionar Día (Calendario):</label>
+        <input type="date" id="adminFecha" />
+
+        <div class="grupo-horario">
+          <div class="campo-horario">
+            <label for="adminHoraDesde">Hora Desde:</label>
+            <input type="time" id="adminHoraDesde" value="09:00" />
+          </div>
+          <div class="campo-horario">
+            <label for="adminHoraHasta">Hora Hasta:</label>
+            <input type="time" id="adminHoraHasta" value="13:00" />
+          </div>
+        </div>
+
+        <label for="adminFraccionar">Fraccionar Turnos:</label>
+        <select id="adminFraccionar">
+          <option value="bloque">Turno Completo (Sin fraccionar)</option>
+          <option value="60">Cada 1 hora (60 min)</option>
+          <option value="30">Cada media hora (30 min)</option>
+        </select>
+
+        <button id="btnPublicarTurno" class="btn btn-primario admin-btn-publicar">
+          <i class="ri-send-plane-line icon"></i> Publicar Disponibilidad
+        </button>
+
+        <div class="admin-turnos-bloque">
+          <div class="admin-turnos-encabezado">
+            <h3 class="admin-turnos-titulo">📅 Turnos Cargados</h3>
+            <button id="btnLimpiarTurnosPasados" type="button" class="admin-btn-limpiar-turnos">
+              <i class="ri-delete-bin-line icon"></i> Limpiar pasados
+            </button>
+          </div>
+          <div id="contenedorListaTurnosAdmin">Cargando turnos...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACORDEÓN 4: REGISTRAR CLIENTE NUEVO -->
+    <div class="acordeon-item">
+      <button class="acordeon-header" onclick="toggleAcordeon('acc-nuevo-cliente', this)">
+        <span><i class="ri-user-add-line icon"></i> Registrar Nuevo Cliente</span>
+        <i class="ri-arrow-down-s-line icon flecha"></i>
+      </button>
+      <div id="acc-nuevo-cliente" class="acordeon-contenido seccion tarjeta-secundario">
+        <label for="nuevoNombre">Nombre y Apellido:</label>
+        <input type="text" id="nuevoNombre" placeholder="Ej: María González" />
+
+        <label for="nuevoCeluPrincipal">Celular Principal (6 dígitos - ID de acceso):</label>
+        <input type="text" id="nuevoCeluPrincipal" maxlength="6" placeholder="Ej: 456789" />
+
+        <label for="nuevoCeluSecundario">Celular Secundario / Pareja (Opcional - 6 dígitos):</label>
+        <input type="text" id="nuevoCeluSecundario" maxlength="6" placeholder="Ej: 123456" />
+
+        <label for="nuevaZona">Zona:</label>
+        <select id="nuevaZona"></select>
+
+        <label for="nuevaDireccion">Dirección exacta:</label>
+        <input type="text" id="nuevaDireccion" placeholder="Ej: Av. Bustillo Km 4.500" />
+
+        <label for="nuevaFechaInicio">Fecha de inicio del servicio:</label>
+        <input type="date" id="nuevaFechaInicio" />
+
+        <button id="btnCrearCliente" class="btn btn-secundario admin-btn-crear-cliente">
+          <i class="ri-save-line icon"></i> Guardar Nuevo Cliente
+        </button>
+      </div>
+    </div>
+
+    <!-- ACORDEÓN 5: CLIENTES ACTIVOS REGISTRADOS -->
+    <div class="acordeon-item">
+      <button class="acordeon-header" onclick="toggleAcordeon('acc-lista-clientes', this)">
+        <span><i class="ri-group-line icon"></i> Clientes Activos Registrados</span>
+        <i class="ri-arrow-down-s-line icon flecha"></i>
+      </button>
+      <div id="acc-lista-clientes" class="acordeon-contenido seccion tarjeta-cian">
+        <div class="admin-clientes-encabezado">
+          <span class="admin-clientes-descripcion">Lista general de usuarios:</span>
+
+          <!-- BOTONES DE ACCIÓN AGRUPADOS (CON SELECTOR DE AÑO GLOBAL) -->
+          <div class="admin-clientes-acciones">
+            <button id="btnDescargarClientesCSV" class="btn-app btn-descargar admin-btn-descargar-clientes">
+              <i class="ri-file-download-line"></i> Descargar Clientes (CSV)
+            </button>
+
+            <div class="admin-story-global-grupo">
+              <select id="selectAnioStoryGlobal" class="select-anio-global">
+                <option value="historico">Histórico</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+              </select>
+              <button id="btnDescargarStoryGlobal" type="button" class="btn-app btn-story-global">
+                <i class="ri-instagram-line"></i> Story Global
+              </button>
+            </div>
+
+            <button id="btnRefrescarClientes" type="button" class="btn btn-secundario admin-btn-refrescar-clientes">
+              <i class="ri-refresh-line icon"></i> Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div id="contenedorListaClientes" class="admin-lista-clientes">
+          <p class="texto-suave">Cargando lista de clientes...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACORDEÓN 6: ESTADO DE CUENTAS -->
+    <div class="acordeon-item acordeon-cuentas">
+      <button class="acordeon-header" onclick="toggleAcordeon('acc-cuentas', this)">
+        <span><i class="ri-wallet-3-line icon"></i> Estado de Cuentas</span>
+        <i class="ri-arrow-down-s-line icon flecha"></i>
+      </button>
+
+      <div id="acc-cuentas" class="acordeon-contenido seccion tarjeta-seccion">
+        <div class="encabezado-estado-cuentas">
+          <div>
+            <h3 class="admin-cuentas-titulo">Resumen de cobranzas</h3>
+            <p class="texto-suave admin-cuentas-descripcion">Vista rápida de clientes al día y saldos pendientes.</p>
+          </div>
+          <div class="acciones-estado-cuentas">
+            <button id="btnDescargarSaldosCSV" type="button" class="btn-app btn-descargar-cuentas">
+              <i class="ri-file-download-line"></i> Descargar saldos pendientes (CSV)
+            </button>
+            <button id="btnRefrescarEstadoCuentas" type="button" class="btn-app btn-refrescar-cuentas">
+              <i class="ri-refresh-line"></i> Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="resumen-cuentas-grid">
+          <div class="tarjeta-resumen-cuenta">
+            <span>Clientes</span>
+            <strong id="cuentasTotalClientes">0</strong>
+          </div>
+          <div class="tarjeta-resumen-cuenta cuenta-ok">
+            <span>Al día</span>
+            <strong id="cuentasAlDia">0</strong>
+          </div>
+          <div class="tarjeta-resumen-cuenta cuenta-pendiente">
+            <span>Con saldo pendiente</span>
+            <strong id="cuentasPendientes">0</strong>
+          </div>
+          <div class="tarjeta-resumen-cuenta cuenta-monto">
+            <span>Total pendiente</span>
+            <strong id="cuentasMontoPendiente">$0</strong>
+          </div>
+        </div>
+
+        <div class="filtros-estado-cuentas" aria-label="Filtros de estado de cuenta">
+          <button type="button" data-filtro-cuenta="todos" class="filtro-cuenta activo"
+            onclick="filtrarEstadoCuentas('todos')">Todos</button>
+          <button type="button" data-filtro-cuenta="pendientes" class="filtro-cuenta"
+            onclick="filtrarEstadoCuentas('pendientes')">Pendientes</button>
+          <button type="button" data-filtro-cuenta="aldia" class="filtro-cuenta"
+            onclick="filtrarEstadoCuentas('aldia')">Al día</button>
+        </div>
+
+        <div class="contenedor-tabla-elegante">
+          <table class="tabla-admin tabla-cuentas-admin">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Zona</th>
+                <th>Saldo</th>
+                <th aria-label="Acciones"></th>
+              </tr>
+            </thead>
+            <tbody id="tablaEstadoCuentasBody">
+              <tr>
+                <td colspan="4" class="texto-suave admin-estado-tabla">Cargando estado de cuentas...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACORDEÓN 7: GESTIONAR ZONAS -->
+    <div class="acordeon-item acordeon-zonas">
+      <button class="acordeon-header" onclick="toggleAcordeon('acc-zonas', this)">
+        <span><i class="ri-map-pin-2-line icon"></i> Gestionar Zonas del Servicio</span>
+        <i class="ri-arrow-down-s-line icon flecha"></i>
+      </button>
+
+      <div id="acc-zonas" class="acordeon-contenido seccion tarjeta-secundario">
+        <div class="form-crear-zona">
+          <input type="text" id="inputNuevaZona" placeholder="Ej: San Antonio / Península" />
+          <input type="number" id="inputPrecioNuevaZona" min="1" step="1" placeholder="Precio por balde ($)" />
+          <button type="button" id="btnGuardarZona" class="btn-app">
+            <i class="ri-add-line"></i> Crear Zona
+          </button>
+        </div>
+        <p class="texto-suave admin-zonas-ayuda">
+          El precio configurado se usa para las recolecciones nuevas. Las ya registradas conservan el valor aplicado en
+          su momento.
+        </p>
+
+        <div id="listaZonasAdmin"></div>
+      </div>
+    </div>
+
+    <!-- TEMPLATES OCULTOS PARA HISTORIAS -->
+    <div id="plantillaStoryAdmin" class="story-admin-container">
+      <div class="story-admin-wrapper">
+        <h2 class="story-admin-title">¡GRACIAS<br>POR COMPOSTAR CON NOSOTROS!</h2>
+        <h3 class="story-admin-subtitle">Hola <span id="storyAdminNombre">Cliente</span></h3>
+        <p class="story-admin-desc">Te compartimos tu impacto<br><span id="storyAdminAnioTexto">histórico</span> en números</p>
+        
+        <div class="story-admin-grid">
+          <div class="story-admin-card">
+            <i class="ri-calendar-2-line story-admin-icon"></i>
+            <strong id="storyAdminDias">0 días</strong>
+            <span>compostando</span>
+          </div>
+          <div class="story-admin-card">
+            <i class="ri-delete-bin-line story-admin-icon"></i>
+            <strong id="storyAdminBaldes">0 baldes</strong>
+            <span>recolectados</span>
+          </div>
+          <div class="story-admin-card">
+            <i class="ri-leaf-line story-admin-icon"></i>
+            <strong id="storyAdminKilos">0 kg de orgánicos</strong>
+            <span>compostados</span>
+          </div>
+          <div class="story-admin-card">
+            <i class="ri-recycle-line story-admin-icon"></i>
+            <strong id="storyAdminCompost">0 kg de compost</strong>
+            <span>producido</span>
+          </div>
+        </div>
+      </div>
+      <div class="story-admin-footer">
+        <div class="story-admin-footer-text">
+          <span class="story-admin-footer-sub">ZONA de</span>
+          <strong class="story-admin-footer-tit">COMPOST</strong>
+        </div>
+        <img src="img/logo.webp" alt="Logo" class="story-admin-logo" />
+      </div>
+    </div>
+
+    <div id="plantillaStoryGlobal" class="story-admin-container">
+      <div class="story-admin-wrapper">
+        <h2 class="story-admin-title">¡NUESTRO IMPACTO<br>COMUNITARIO!</h2>
+        <h3 class="story-admin-subtitle">Mirá lo que logramos juntos<br><span id="storyGlobalAnioTexto">hasta hoy</span></h3>
+        
+        <div class="story-admin-grid story-admin-grid-global">
+          <div class="story-admin-card">
+            <i class="ri-group-line story-admin-icon"></i>
+            <strong id="storyGlobalFamilias">0</strong>
+            <span>familias sumadas</span>
+          </div>
+          <div class="story-admin-card">
+            <i class="ri-leaf-line story-admin-icon"></i>
+            <strong id="storyGlobalKilos">0 kg</strong>
+            <span>orgánicos reciclados</span>
+          </div>
+          <div class="story-admin-card">
+            <i class="ri-delete-bin-line story-admin-icon"></i>
+            <strong id="storyGlobalBaldes">0</strong>
+            <span>baldes cambiados</span>
+          </div>
+          <div class="story-admin-card">
+            <i class="ri-plant-line story-admin-icon"></i>
+            <strong id="storyGlobalCompost">0 kg</strong>
+            <span>abono generado</span>
+          </div>
+        </div>
+      </div>
+      <div class="story-admin-footer">
+        <div class="story-admin-footer-text">
+          <span class="story-admin-footer-sub">ZONA de</span>
+          <strong class="story-admin-footer-tit">COMPOST</strong>
+        </div>
+        <img src="img/logo.webp" alt="Logo" class="story-admin-logo" />
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER GLOBAL -->
+  <footer class="footer-global">
+    <div class="footer-contenido">
+      <div class="footer-contactos">
+        <a href="https://wa.me/5492944517496" target="_blank" rel="noopener noreferrer" class="link-contacto whatsapp"
+          title="WhatsApp">
+          <i class="ri-whatsapp-fill icon-footer"></i>
+          <span>WhatsApp</span>
+        </a>
+
+        <a href="https://instagram.com/zonadecompost" target="_blank" rel="noopener noreferrer"
+          class="link-contacto instagram" title="Instagram">
+          <i class="ri-instagram-fill icon-footer"></i>
+          <span>Instagram</span>
+        </a>
+      </div>
+
+      <div class="footer-creditos">
+        <p>
+          © 2026 <strong>Zona de Compost</strong>. Todos los derechos reservados.
+        </p>
+        <p class="firma-autor">
+          Desarrollado por
+          <a href="https://instagram.com/argos.brc" target="_blank" rel="noopener noreferrer">
+            Argos IT
+          </a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/admin.js" type="module"></script>
+  <script>
+    window.toggleAcordeon = function (idContenido, btnHeader) {
+      const contenido = document.getElementById(idContenido);
+      if (!contenido) return;
+      const estaAbierto = contenido.classList.contains("abierto");
+
+      if (estaAbierto) {
+        contenido.classList.remove("abierto");
+        btnHeader.classList.remove("activo");
+      } else {
+        contenido.classList.add("abierto");
+        btnHeader.classList.add("activo");
+      }
+    };
+  </script>
+</body>
+
+</html>

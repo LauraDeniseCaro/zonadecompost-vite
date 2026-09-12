@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zona de Compost - Bariloche</title>
+  <!-- METADATOS DE PREVISUALIZACIÓN (OPEN GRAPH / SOCIAL SHARE) -->
+  <meta name="description"
+    content="Servicio de recolección de residuos orgánicos domiciliarios y compostaje en San Carlos de Bariloche. Transformamos residuos en vida." />
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://zonadecompost.vercel.app" />
+  <meta property="og:title" content="Zona de Compost - Bariloche" />
+  <meta property="og:description"
+    content="Servicio de recolección de orgánicos domiciliarios y compostaje. ¡Súmate a transformar residuos en vida!" />
+  <meta property="og:image" content="https://zonadecompost.vercel.app/img/og-preview.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="es_AR" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Zona de Compost - Bariloche" />
+  <meta name="twitter:description"
+    content="Servicio de recolección de orgánicos domiciliarios y compostaje en Bariloche." />
+  <meta name="twitter:image" content="https://zonadecompost.vercel.app/img/og-preview.jpg" />
+
+  <!-- FAVICON PARA LA PESTAÑA -->
+  <link rel="icon" type="image/webp" href="img/logo.webp" />
+  <link rel="stylesheet" href="css/global.css" />
+  <link rel="stylesheet" href="css/publico.css" />
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- SWEETALERT2 + REEMPLAZO GLOBAL DE ALERT -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    window.alert = function (mensaje) {
+      Swal.fire({
+        text: mensaje,
+        confirmButtonColor: '#16a34a',
+        confirmButtonText: 'Entendido'
+      });
+    };
+  </script>
+</head>
+
+<body class="pagina-publica">
+  <!-- HEADER / MENÚ DE NAVEGACIÓN -->
+  <header class="header-principal">
+    <a href="#" class="logo-container">
+      <img src="img/logo.webp" alt="Logo Zona de Compost" class="logo-img" />
+      <span class="logo-texto">
+        <i class="ri-plant-line icon-lg"></i> Zona de Compost
+      </span>
+    </a>
+    <nav class="nav-publico">
+      <a href="#servicios">Servicios</a>
+      <a href="#composteras">Composteras</a>
+      <a href="#novedades">Novedades</a>
+      <button class="btn-login-header" onclick="abrirModalLogin()">
+        <i class="ri-key-2-line icon"></i> Mi Cuenta
+      </button>
+    </nav>
+  </header>
+
+  <!-- CONTENEDOR DE LA WEB PÚBLICA (SE OCULTA AL LOGUEARSE) -->
+  <main id="seccionPublica">
+    <!-- SECCIÓN HERO -->
+    <section class="hero">
+      <h1>Transformamos residuos en vida</h1>
+      <p>
+        Servicio de recolección de orgánicos domiciliarios y compostaje en
+        Bariloche.
+      </p>
+
+      <!-- BOTÓN DE SUMARSE AL SERVICIO (REDIRECCIONA A GOOGLE FORMS) -->
+      <div class="hero-cta">
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSdEofZ-8IiREmI1kDp1Jbq_PCfurHRxZVfuIvxcDQkr-KR9Mg/viewform?fbclid=PAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQPNTY3MDY3MzQzMzUyNDI3AAGnXk9aetm0zM1izmqHHrNJaoqHA-1uXSaZABEGv4Rip1pJqH-exGEei-xJmkE_aem_EEISFDjjYJ5F1CQcieIwwQ"
+          target="_blank" rel="noopener noreferrer" class="btn btn-cian btn-cta-servicio">
+          <i class="ri-sparkling-line icon"></i> ¡Quiero sumarme al
+          servicio!
+        </a>
+      </div>
+
+      <!-- REEMPLAZAR EL BLOQUE .panel-impacto-comunitario EN index.html -->
+      <div class="panel-impacto-comunitario">
+        <div class="encabezado-impacto">
+          <span class="badge-comunidad">
+            <i class="ri-group-line icon-sm"></i> Impacto Colectivo
+          </span>
+          <h2>Nuestro Impacto en Números</h2>
+          <p>Lo que logramos transformando orgánicos juntos</p>
+        </div>
+
+        <!-- MÉTRICA 1: KILOS RECICLADOS -->
+        <div class="tarjeta-impacto destacada-principal">
+          <div class="icono-impacto cian">
+            <i class="ri-scales-3-line icon-lg"></i>
+          </div>
+          <div class="info-impacto centrado">
+            <span class="label-impacto">TOTAL ORGÁNICOS RECICLADOS</span>
+            <div class="valor-wrapper centrado">
+              <strong id="contadorKilos">0.0</strong>
+              <span class="unidad">kg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÉTRICA 2: FAMILIAS SUMADAS -->
+        <div class="tarjeta-impacto destacada-principal"
+          style="background: linear-gradient(135deg, rgba(102, 242, 202, 0.15) 0%, rgba(96, 56, 242, 0.15) 100%); border-color: rgba(102, 242, 202, 0.3);">
+          <div class="icono-impacto menta">
+            <i class="ri-heart-line icon-lg"></i>
+          </div>
+          <div class="info-impacto centrado">
+            <span class="label-impacto">FAMILIAS SUMADAS</span>
+            <div class="valor-wrapper centrado">
+              <strong id="contadorClientes">0</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN SERVICIOS -->
+    <section id="servicios" class="seccion-informativa">
+      <h2><i class="ri-sparkling-line icon"></i> Nuestros Servicios</h2>
+      <div class="tarjetas-grid">
+        <div class="tarjeta-info">
+          <h3>
+            <i class="ri-shopping-bag-line icon"></i> Recolección
+            Domiciliaria
+          </h3>
+          <p>
+            Te dejamos un balde de 20 litros para tus orgánicos, lo retiramos
+            cuando está lleno, te dejamos uno vacío y al tiempo te devolvemos
+            abono premium para tus plantas.
+          </p>
+        </div>
+        <div class="tarjeta-info">
+          <h3>
+            <i class="ri-recycle-line icon"></i> Gestión en Eventos
+          </h3>
+          <p>
+            Hacemos que tus eventos sean sustentables. Colocamos estaciones de
+            reciclaje y nos encargamos del correcto tratamiento de los
+            residuos orgánicos.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- REEMPLAZAR LA SECCIÓN #composteras EN index.html -->
+    <section id="composteras" class="seccion-informativa bg-alternativo">
+      <h2>
+        <i class="ri-box-3-line icon"></i> Catálogo de Productos y Servicios
+      </h2>
+      <p class="catalogo-intro">
+        Equipamiento adaptado al clima de Bariloche con asesoramiento completo.
+      </p>
+
+      <div class="tarjetas-grid">
+        <!-- PRODUCTO 1: Recolección Domiciliaria -->
+        <div class="tarjeta-info tarjeta-producto">
+          <div class="carrusel-container" id="carrusel-1">
+            <div class="carrusel-slides">
+              <img src="img/balde-1.webp" alt="Balde Recolección 1" class="slide active" />
+              <img src="img/balde-2.webp" alt="Balde Recolección 2" class="slide" />
+              <img src="img/balde-3.webp" alt="Balde Recolección 3" class="slide" />
+              <img src="img/balde-4.webp" alt="Balde Recolección 4" class="slide" />
+            </div>
+            <button class="carrusel-btn prev" onclick="moverCarrusel('carrusel-1', -1)">
+              &#10094;
+            </button>
+            <button class="carrusel-btn next" onclick="moverCarrusel('carrusel-1', 1)">
+              &#10095;
+            </button>
+            <div class="carrusel-dots"></div>
+          </div>
+          <h3>Recolección Domiciliaria</h3>
+          <p>
+            Balde de 20L a demanda (~25-50 días). Incluye retiro, sanitizado,
+            devolución y 2kg de compost gratis en Otoño/Primavera.
+          </p>
+          <button class="btn btn-secundario" onclick="encargarProducto('Servicio de Recolección Domiciliaria')">
+            <i class="ri-whatsapp-line"></i> Ver precio
+          </button>
+        </div>
+
+        <!-- PRODUCTO 2: Compostera 125L -->
+        <div class="tarjeta-info tarjeta-producto">
+          <div class="carrusel-container" id="carrusel-2">
+            <div class="carrusel-slides">
+              <img src="img/compostera125-1.webp" alt="Compostera 125L Vista 1" class="slide active" />
+              <img src="img/compostera125-2.webp" alt="Compostera 125L Vista 2" class="slide" />
+              <img src="img/compostera125-3.webp" alt="Compostera 125L Vista 3" class="slide" />
+            </div>
+            <button class="carrusel-btn prev" onclick="moverCarrusel('carrusel-2', -1)">
+              &#10094;
+            </button>
+            <button class="carrusel-btn next" onclick="moverCarrusel('carrusel-2', 1)">
+              &#10095;
+            </button>
+            <div class="carrusel-dots"></div>
+          </div>
+          <h3>Compostera 2 Personas (125L)</h3>
+          <p>
+            Construida en madera de pallets recuperada, protegida con
+            Cetol/asfalto. Medidas: 50x50x50cm. Ideal para espacios reducidos.
+          </p>
+          <button class="btn btn-secundario" onclick="encargarProducto('Compostera 2 Personas (125L)')">
+            <i class="ri-whatsapp-line"></i> Ver precio
+          </button>
+        </div>
+
+        <!-- PRODUCTO 3: Compostera 250L -->
+        <div class="tarjeta-info tarjeta-producto">
+          <div class="carrusel-container" id="carrusel-3">
+            <div class="carrusel-slides">
+              <img src="img/compostera250-1.webp" alt="Compostera 250L Vista 1" class="slide active" />
+              <img src="img/compostera250-2.webp" alt="Compostera 250L Vista 2" class="slide" />
+              <img src="img/compostera250-3.webp" alt="Compostera 250L Vista 3" class="slide" />
+              <img src="img/compostera250-4.webp" alt="Compostera 250L Vista 4" class="slide" />
+              <img src="img/compostera250-5.webp" alt="Compostera 250L Vista 5" class="slide" />
+            </div>
+            <button class="carrusel-btn prev" onclick="moverCarrusel('carrusel-3', -1)">
+              &#10094;
+            </button>
+            <button class="carrusel-btn next" onclick="moverCarrusel('carrusel-3', 1)">
+              &#10095;
+            </button>
+            <div class="carrusel-dots"></div>
+          </div>
+          <h3>Compostera 4-6 Personas (250L)</h3>
+          <p>
+            2 módulos independientes de 50x50x50cm. Permite rotar el llenado y
+            maduración sin detener el compostaje familiar.
+          </p>
+          <button class="btn btn-secundario" onclick="encargarProducto('Compostera 4-6 Personas (250L)')">
+            <i class="ri-whatsapp-line"></i> Ver precio
+          </button>
+        </div>
+
+        <!-- PRODUCTO 4: Aireador -->
+        <div class="tarjeta-info tarjeta-producto">
+          <div class="carrusel-container" id="carrusel-4">
+            <div class="carrusel-slides">
+              <img src="img/aireador-1.webp" alt="Aireador de compost 1" class="slide active" />
+              <img src="img/aireador-2.webp" alt="Aireador de compost 2" class="slide" />
+            </div>
+            <button class="carrusel-btn prev" onclick="moverCarrusel('carrusel-4', -1)">
+              &#10094;
+            </button>
+            <button class="carrusel-btn next" onclick="moverCarrusel('carrusel-4', 1)">
+              &#10095;
+            </button>
+            <div class="carrusel-dots"></div>
+          </div>
+          <h3>Aireador de Compost</h3>
+          <p>
+            Herramienta metálica con tratamiento antióxido diseñada para
+            mezclar y oxigenar tu compostera de forma sencilla.
+          </p>
+          <button class="btn btn-secundario" onclick="encargarProducto('Aireador metálico de compost')">
+            <i class="ri-whatsapp-line"></i> Ver precio
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN NOVEDADES / TALLERES -->
+    <section id="novedades" class="seccion-informativa">
+      <h2>
+        <i class="ri-newspaper-line icon"></i> Novedades y Talleres
+      </h2>
+      <div id="contenedorNovedades">
+        <div class="tarjeta-novedad">
+          <span class="fecha-novedad">Próximamente</span>
+          <h3>
+            <i class="ri-snowflake-line icon"></i> Taller de Compostaje
+            Invernal
+          </h3>
+          <p>
+            Se viene un nuevo encuentro para aprender a cuidar nuestro compost
+            de las bajas temperaturas y heladas de Bariloche. ¡Estate atento a
+            las redes!
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- VENTANA MODAL PARA LOGUEO -->
+  <div id="modalLogin" class="bloqueo-overlay modal-oculto">
+    <div class="bloqueo-caja">
+      <span class="cerrar-modal" onclick="cerrarModalLogin()">&times;</span>
+      <h3>
+        <i class="ri-user-check-line icon"></i> Ingresar a mi Panel
+      </h3>
+      <p class="subtitulo-modal">
+        Colocá los últimos 6 números de tu celular para gestionar tus retiros
+        y ver tus estadísticas.
+      </p>
+      <form id="formLogin">
+        <input type="tel" inputmode="numeric" id="celuUsuario" placeholder="Ej: 456789" maxlength="6" class="input-celular" required />
+        <button type="submit" class="btn-login-confirmar">
+          <i class="ri-arrow-right-line icon"></i> Ingresar
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- FOOTER GLOBAL REDISEÑADO CON DATOS REALES -->
+  <footer class="footer-global">
+    <div class="footer-contenido">
+
+      <!-- CANALES DE CONTACTO Y REDES -->
+      <div class="footer-contactos">
+        <a href="https://wa.me/5492944517496" target="_blank" rel="noopener noreferrer" class="link-contacto whatsapp"
+          title="WhatsApp">
+          <i class="ri-whatsapp-fill icon-footer"></i>
+          <span>WhatsApp</span>
+        </a>
+
+        <a href="https://instagram.com/zonadecompost" target="_blank" rel="noopener noreferrer"
+          class="link-contacto instagram" title="Instagram">
+          <i class="ri-instagram-fill icon-footer"></i>
+          <span>Instagram</span>
+        </a>
+
+        <!-- <a href="mailto:zonadecompost@gmail.com" class="link-contacto email" title="Gmail">
+          <i class="ri-mail-fill icon-footer"></i>
+          <span>Gmail</span>
+        </a>
+
+        <a href="https://facebook.com/zonadecompost" target="_blank" rel="noopener noreferrer"
+          class="link-contacto facebook" title="Facebook">
+          <i class="ri-facebook-circle-fill icon-footer"></i>
+          <span>Facebook</span>
+        </a> -->
+      </div>
+
+      <!-- COPYRIGHT Y FIRMA DE AUTORÍA -->
+      <div class="footer-creditos">
+        <p>
+          © 2026 <strong>Zona de Compost</strong>. Todos los derechos reservados.
+        </p>
+        <p class="firma-autor">
+          Desarrollado por
+          <a href="https://instagram.com/argos.brc" target="_blank" rel="noopener noreferrer">
+            Argos IT
+          </a>
+        </p>
+      </div>
+
+    </div>
+  </footer>
+
+  <script type="module" src="js/inicio.js"></script>
+</body>
+
+</html>
