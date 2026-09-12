@@ -26,24 +26,12 @@
   <meta name="twitter:description"
     content="Servicio de recolección de orgánicos domiciliarios y compostaje en Bariloche." />
   <meta name="twitter:image" content="https://zonadecompost.vercel.app/img/og-preview.jpg" />
-  
+
   <link rel="icon" type="image/webp" href="img/logo.webp" />
   <link rel="stylesheet" href="css/global.css" />
   <link rel="stylesheet" href="css/admin.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-  
-  <!-- LIBRERÍAS EXTERNAS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script>
-    window.alert = function (mensaje) {
-      Swal.fire({
-        text: mensaje,
-        confirmButtonColor: '#16a34a',
-        confirmButtonText: 'Entendido'
-      });
-    };
-  </script>
+
 </head>
 
 <body class="pagina-admin">
@@ -71,8 +59,7 @@
         <!-- CAMPO DE BÚSQUEDA -->
         <div class="form-group" id="cajaInputBusquedaAdmin">
           <label for="buscarClienteInput">Buscar Cliente (Nombre o Celular):</label>
-          <input type="tel" inputmode="numeric" class="form-control" placeholder="Ej: Juan o 456789"
-            autocomplete="off">
+          <input type="tel" inputmode="numeric" class="form-control" placeholder="Ej: Juan o 456789" autocomplete="off">
           <div id="resultadosBusquedaAdmin" class="resultados-busqueda-dropdown admin-oculto"></div>
         </div>
 
@@ -460,8 +447,9 @@
       <div class="story-admin-wrapper">
         <h2 class="story-admin-title">¡GRACIAS<br>POR COMPOSTAR CON NOSOTROS!</h2>
         <h3 class="story-admin-subtitle">Hola <span id="storyAdminNombre">Cliente</span></h3>
-        <p class="story-admin-desc">Te compartimos tu impacto<br><span id="storyAdminAnioTexto">histórico</span> en números</p>
-        
+        <p class="story-admin-desc">Te compartimos tu impacto<br><span id="storyAdminAnioTexto">histórico</span> en
+          números</p>
+
         <div class="story-admin-grid">
           <div class="story-admin-card">
             <i class="ri-calendar-2-line story-admin-icon"></i>
@@ -497,8 +485,9 @@
     <div id="plantillaStoryGlobal" class="story-admin-container">
       <div class="story-admin-wrapper">
         <h2 class="story-admin-title">¡NUESTRO IMPACTO<br>COMUNITARIO!</h2>
-        <h3 class="story-admin-subtitle">Mirá lo que logramos juntos<br><span id="storyGlobalAnioTexto">hasta hoy</span></h3>
-        
+        <h3 class="story-admin-subtitle">Mirá lo que logramos juntos<br><span id="storyGlobalAnioTexto">hasta hoy</span>
+        </h3>
+
         <div class="story-admin-grid story-admin-grid-global">
           <div class="story-admin-card">
             <i class="ri-group-line story-admin-icon"></i>
@@ -564,7 +553,7 @@
     </div>
   </footer>
 
-  <script src="js/admin.js" type="module"></script>
+  <script type="module" src="/js/admin.js"></script>
   <script>
     window.toggleAcordeon = function (idContenido, btnHeader) {
       const contenido = document.getElementById(idContenido);

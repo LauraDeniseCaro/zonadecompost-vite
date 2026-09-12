@@ -31,20 +31,6 @@
   <link rel="stylesheet" href="css/cliente.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
 
-  <!-- Soporte para generar la historia en canvas -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
-  <!-- SWEETALERT2 + REEMPLAZO GLOBAL DE ALERT -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script>
-    window.alert = function (mensaje) {
-      Swal.fire({
-        text: mensaje,
-        confirmButtonColor: '#16a34a',
-        confirmButtonText: 'Entendido'
-      });
-    };
-  </script>
 </head>
 
 <body class="pagina-cliente">
@@ -286,7 +272,7 @@
     </div>
   </footer>
 
-  <script src="js/cliente.js?v=3.0" type="module"></script>
+  <script type="module" src="/js/cliente.js"></script>
 </body>
 
 </html>
