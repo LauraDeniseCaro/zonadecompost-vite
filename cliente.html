@@ -5,11 +5,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mi Panel - Zona de Compost</title>
-  <!-- METADATOS DE PREVISUALIZACIÓN (OPEN GRAPH / SOCIAL SHARE) -->
+  
   <meta name="description"
     content="Servicio de recolección de residuos orgánicos domiciliarios y compostaje en San Carlos de Bariloche. Transformamos residuos en vida." />
 
-  <!-- Open Graph / Facebook / WhatsApp -->
+  <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://zonadecompost.vercel.app" />
   <meta property="og:title" content="Zona de Compost - Bariloche" />
@@ -26,18 +26,17 @@
   <meta name="twitter:description"
     content="Servicio de recolección de orgánicos domiciliarios y compostaje en Bariloche." />
   <meta name="twitter:image" content="https://zonadecompost.vercel.app/img/og-preview.jpg" />
-  <link rel="icon" type="image/webp" href="img/logo.webp" />
-  <link rel="stylesheet" href="css/global.css" />
-  <link rel="stylesheet" href="css/cliente.css" />
+  
+  <link rel="icon" type="image/webp" href="/img/logo.webp" />
+  <link rel="stylesheet" href="/css/global.css" />
+  <link rel="stylesheet" href="/css/cliente.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-
 </head>
 
 <body class="pagina-cliente">
-  <!-- HEADER CLIENTE -->
   <header class="header-principal">
     <a href="#" class="logo-container">
-      <img src="img/logo.webp" alt="Logo Zona de Compost" class="logo-img" />
+      <img src="/img/logo.webp" alt="Logo Zona de Compost" class="logo-img" />
       <span class="logo-texto"><i class="ri-plant-line icon-lg"></i> Zona de Compost</span>
     </a>
     <button onclick="cerrarSesion()" class="btn-cerrar-sesion">
@@ -65,39 +64,33 @@
     </div>
 
     <!-- ESTADO DE CUENTA / ABONO -->
-    <div id="cajaEstadoCuenta" class="seccion estado-cuenta-panel">
-      <!-- Se llena dinámicamente -->
-    </div>
+    <div id="cajaEstadoCuenta" class="seccion estado-cuenta-panel"></div>
 
-    <!-- MÉTRICAS DE IMPACTO PERSONAL (4 TARJETAS) -->
+    <!-- MÉTRICAS DE IMPACTO PERSONAL -->
     <div class="seccion tarjeta-menta impacto-personal">
       <h3 class="impacto-personal-titulo">
         <i class="ri-plant-line"></i> Tu Impacto en Números
       </h3>
 
       <div class="grid-metricas-cliente">
-        <!-- 1. Días compostando -->
         <div class="card-metrica-cliente">
           <i class="ri-calendar-check-line icono-metrica-card"></i>
           <strong id="clienteDiasCompostando" class="valor-metrica-card">0</strong>
           <span class="label-metrica-card">Días compostando</span>
         </div>
 
-        <!-- 2. Baldes recolectados -->
         <div class="card-metrica-cliente">
           <i class="ri-delete-bin-6-line icono-metrica-card"></i>
           <strong id="clienteBaldesTotal" class="valor-metrica-card">0</strong>
           <span class="label-metrica-card">Baldes recolectados</span>
         </div>
 
-        <!-- 3. Kilos de orgánicos -->
         <div class="card-metrica-cliente">
           <i class="ri-scales-3-line icono-metrica-card"></i>
           <strong id="clienteKilos" class="valor-metrica-card">0.0 kg</strong>
           <span class="label-metrica-card">Orgánicos compostados</span>
         </div>
 
-        <!-- 4. Compost producido -->
         <div class="card-metrica-cliente">
           <i class="ri-recycle-line icono-metrica-card"></i>
           <strong id="clienteCompostProducido" class="valor-metrica-card">0.0 kg</strong>
@@ -105,13 +98,12 @@
         </div>
       </div>
 
-      <!-- BOTÓN COMPARTIR -->
       <button type="button" id="btnCompartirImpacto" class="btn-compartir-logro">
         <i class="ri-instagram-line"></i> Compartir en Historias
       </button>
     </div>
 
-    <!-- TEMPLATE OCULTO PARA INSTAGRAM STORY DEL CLIENTE (1080x1920) -->
+    <!-- TEMPLATE OCULTO PARA INSTAGRAM STORY -->
     <div id="plantillaStoryInstagram" class="story-container-oculto">
       <div class="story-contenido-wrapper">
         <div class="story-header-text">
@@ -120,30 +112,25 @@
           <p class="story-subtitulo-impacto">Te comparto mi aporte<br>en números</p>
         </div>
 
-        <!-- GRILLA 2x2 DE TARJETAS AZUL OSCURO -->
         <div class="story-grid-cards">
-          <!-- 1. Días -->
           <div class="story-navy-card">
             <i class="ri-calendar-2-line story-navy-icon"></i>
             <strong id="storyDias">0 días</strong>
             <span>compostando</span>
           </div>
 
-          <!-- 2. Baldes -->
           <div class="story-navy-card">
             <i class="ri-delete-bin-line story-navy-icon"></i>
             <strong id="storyBaldes">0 baldes</strong>
             <span>recolectados</span>
           </div>
 
-          <!-- 3. Orgánicos -->
           <div class="story-navy-card">
             <i class="ri-leaf-line story-navy-icon"></i>
             <strong id="storyKilos">0 kg de orgánicos</strong>
             <span>compostados</span>
           </div>
 
-          <!-- 4. Compost -->
           <div class="story-navy-card">
             <i class="ri-recycle-line story-navy-icon"></i>
             <strong id="storyCompost">0 kg de compost</strong>
@@ -151,13 +138,12 @@
           </div>
         </div>
 
-        <!-- FOOTER CON MARCA -->
         <div class="story-footer-marca">
           <div class="story-marca-texto">
             <span class="story-marca-sub">ZONA de</span>
             <strong class="story-marca-tit">COMPOST</strong>
           </div>
-          <img src="img/logo.webp" alt="Logo" class="story-marca-logo" />
+          <img src="/img/logo.webp" alt="Logo" class="story-marca-logo" />
         </div>
       </div>
     </div>
@@ -179,21 +165,16 @@
         </div>
       </div>
 
-      <!-- Inputs ocultos para guardar la selección de fecha y hora -->
       <input type="hidden" id="fechaSeleccionadaFinal" value="" />
       <input type="hidden" id="horarioSeleccionadoFinal" value="" />
 
-      <!-- PASO 1: Lista de Días y Horarios Disponibles -->
       <label class="paso-label">
         1. Horarios Disponibles para tu zona:
       </label>
       <div id="contenedorDiasDisponibles" class="turnos-disponibles">
-        <p class="texto-carga">
-          Cargando horarios disponibles...
-        </p>
+        <p class="texto-carga">Cargando horarios disponibles...</p>
       </div>
 
-      <!-- PASO 2: Opciones de entrega -->
       <label for="selectEntregaCliente" class="paso-label paso-label--separado">
         2. ¿Cómo hacés la entrega del balde?:
       </label>
@@ -205,14 +186,12 @@
         <option value="Otro">✍️ Otro (especificar detalle)</option>
       </select>
 
-      <!-- Campo opcional cuando se selecciona 'Otro' -->
       <div id="cajaNotaOtro" class="nota-otro-cliente">
         <label for="notaBaldeCliente" class="nota-otro-label">Especificar detalle de entrega:</label>
         <input type="text" id="notaBaldeCliente" placeholder="Ej: Dejo el balde detrás de la reja"
           class="nota-otro-input" />
       </div>
 
-      <!-- PASO 3: CANTIDAD DE BALDES A CAMBIAR -->
       <div class="campo-baldes-cliente">
         <label class="label-baldes">🗑️ Baldes a cambiar:</label>
         <div class="control-contador-baldes">
@@ -222,7 +201,6 @@
         </div>
       </div>
 
-      <!-- Botón final para enviar la solicitud -->
       <button id="btnPedirBaldeCliente" class="btn btn-primario btn-confirmar-retiro">
         <i class="ri-send-plane-line icon"></i> Confirmar Solicitud de Retiro
       </button>
@@ -234,39 +212,27 @@
         <i class="ri-history-line icon"></i> Mis Solicitudes Recientes
       </h2>
       <div id="listaMisSolicitudes">
-        <p class="texto-carga">
-          Cargando historial...
-        </p>
+        <p class="texto-carga">Cargando historial...</p>
       </div>
     </div>
   </div>
 
-  <!-- FOOTER GLOBAL -->
   <footer class="footer-global">
     <div class="footer-contenido">
       <div class="footer-contactos">
-        <a href="https://wa.me/5492944517496" target="_blank" rel="noopener noreferrer" class="link-contacto whatsapp"
-          title="WhatsApp">
+        <a href="https://wa.me/5492944517496" target="_blank" rel="noopener noreferrer" class="link-contacto whatsapp" title="WhatsApp">
           <i class="ri-whatsapp-fill icon-footer"></i>
           <span>WhatsApp</span>
         </a>
-
-        <a href="https://instagram.com/zonadecompost" target="_blank" rel="noopener noreferrer"
-          class="link-contacto instagram" title="Instagram">
+        <a href="https://instagram.com/zonadecompost" target="_blank" rel="noopener noreferrer" class="link-contacto instagram" title="Instagram">
           <i class="ri-instagram-fill icon-footer"></i>
           <span>Instagram</span>
         </a>
       </div>
-
       <div class="footer-creditos">
-        <p>
-          © 2026 <strong>Zona de Compost</strong>. Todos los derechos reservados.
-        </p>
+        <p>© 2026 <strong>Zona de Compost</strong>. Todos los derechos reservados.</p>
         <p class="firma-autor">
-          Desarrollado por
-          <a href="https://instagram.com/argos.brc" target="_blank" rel="noopener noreferrer">
-            Argos IT
-          </a>
+          Desarrollado por <a href="https://instagram.com/argos.brc" target="_blank" rel="noopener noreferrer">Argos IT</a>
         </p>
       </div>
     </div>

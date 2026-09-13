@@ -5,11 +5,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin - Zona de Compost</title>
-  <!-- METADATOS DE PREVISUALIZACIÓN (OPEN GRAPH / SOCIAL SHARE) -->
   <meta name="description"
     content="Servicio de recolección de residuos orgánicos domiciliarios y compostaje en San Carlos de Bariloche. Transformamos residuos en vida." />
 
-  <!-- Open Graph / Facebook / WhatsApp -->
+  <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://zonadecompost.vercel.app" />
   <meta property="og:title" content="Zona de Compost - Bariloche" />
@@ -26,19 +25,17 @@
   <meta name="twitter:description"
     content="Servicio de recolección de orgánicos domiciliarios y compostaje en Bariloche." />
   <meta name="twitter:image" content="https://zonadecompost.vercel.app/img/og-preview.jpg" />
-
-  <link rel="icon" type="image/webp" href="img/logo.webp" />
-  <link rel="stylesheet" href="css/global.css" />
-  <link rel="stylesheet" href="css/admin.css" />
+  
+  <link rel="icon" type="image/webp" href="/img/logo.webp" />
+  <link rel="stylesheet" href="/css/global.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-
 </head>
 
 <body class="pagina-admin">
-  <!-- HEADER ADMIN -->
   <header class="header-principal">
     <a href="#" class="logo-container">
-      <img src="img/logo.webp" alt="Logo" class="logo-img" />
+      <img src="/img/logo.webp" alt="Logo" class="logo-img" />
       <span class="logo-texto"><i class="ri-shield-check-line icon-lg"></i> Panel Admin</span>
     </a>
     <button onclick="cerrarSesionAdmin()" class="btn-cerrar-sesion">
@@ -47,7 +44,7 @@
   </header>
 
   <main class="contenedor-principal">
-    <!-- ACORDEÓN 1: GESTIONAR CLIENTE / MÉTRICAS / CUENTA -->
+    <!-- ACORDEÓN 1: GESTIONAR CLIENTE -->
     <div class="acordeon-item">
       <button class="acordeon-header" onclick="toggleAcordeon('acc-buscar', this)">
         <span><i class="ri-scales-3-line icon"></i>Gestionar Cliente</span>
@@ -55,22 +52,16 @@
       </button>
 
       <div id="acc-buscar" class="acordeon-contenido seccion tarjeta-primario">
-
-        <!-- CAMPO DE BÚSQUEDA -->
         <div class="form-group" id="cajaInputBusquedaAdmin">
           <label for="buscarClienteInput">Buscar Cliente (Nombre o Celular):</label>
-          <input type="tel" inputmode="numeric" class="form-control" placeholder="Ej: Juan o 456789" autocomplete="off">
+          <input type="text" id="buscarClienteInput" class="form-control" placeholder="Ej: Juan o 456789" autocomplete="off">
           <div id="resultadosBusquedaAdmin" class="resultados-busqueda-dropdown admin-oculto"></div>
         </div>
 
-        <!-- PANEL DEL CLIENTE SELECCIONADO -->
         <div id="cajaClienteSeleccionadoAdmin" class="panel-cliente-card admin-oculto">
           <input type="hidden" id="clienteSeleccionadoId">
-
-          <!-- DATOS RESUMIDOS DEL CLIENTE -->
           <div id="textoClienteSeleccionado" class="info-cliente-resumen admin-resumen-cliente"></div>
 
-          <!-- GENERADOR DE STORY ADMIN -->
           <div class="admin-story-controls">
             <label for="selectAnioStoryAdmin">Generar Resumen de Impacto:</label>
             <div class="admin-story-actions">
@@ -87,7 +78,6 @@
             <p class="admin-story-help">Genera la imagen .png para enviarle al cliente por WhatsApp.</p>
           </div>
 
-          <!-- BOTONES DE NAVEGACIÓN Y EDICIÓN -->
           <div class="admin-fila-acciones">
             <button type="button" id="btnToggleEditarCliente" class="btn-app btn-app-editar admin-btn-flex">
               <i class="ri-edit-line"></i> Editar Perfil
@@ -97,16 +87,12 @@
             </button>
           </div>
 
-          <!-- FORMULARIO DE EDICIÓN (DESPLEGABLE / OCULTO POR DEFECTO) -->
           <div id="formEditarPerfilCliente" class="admin-panel-edicion">
-            <h4 class="admin-subtitulo"><i class="ri-user-settings-line"></i> Editar
-              Datos de Registro</h4>
+            <h4 class="admin-subtitulo"><i class="ri-user-settings-line"></i> Editar Datos de Registro</h4>
 
             <div class="form-group">
               <label>Editar Zona:</label>
-              <select id="editZona" class="form-control">
-                <!-- Se puebla dinámicamente desde JS -->
-              </select>
+              <select id="editZona" class="form-control"></select>
             </div>
 
             <div class="form-group">
@@ -139,12 +125,8 @@
             </div>
           </div>
 
-          <!-- ACCIONES RÁPIDAS (KILOS / BALDES) + ESTADO DE CUENTA -->
           <div class="admin-panel-operativo">
-
-            <!-- SECCIÓN 1: KILOS Y BALDES -->
-            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-recycle-line"></i> Carga manual de
-              Kilos y Baldes</h4>
+            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-recycle-line"></i> Carga manual de Kilos y Baldes</h4>
             <div class="admin-grid-2">
               <div class="form-group">
                 <label for="kilosASumarInput">Kilos A Sumar:</label>
@@ -161,17 +143,12 @@
 
             <hr class="admin-separador">
 
-            <!-- SECCIÓN 2: RECOLECCIONES PENDIENTES DE PAGO -->
-            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-money-dollar-circle-line"></i>
-              Recolecciones Pendientes de Pago</h4>
+            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-money-dollar-circle-line"></i> Recolecciones Pendientes de Pago</h4>
             <div id="contenedorDeudasClienteAdmin">
               <p class="texto-suave">Seleccioná un cliente para ver su estado de cuenta.</p>
             </div>
-
           </div>
-
         </div>
-
       </div>
     </div>
 
@@ -207,9 +184,7 @@
             </thead>
             <tbody id="tablaHojaRutaBody">
               <tr>
-                <td colspan="4" class="texto-suave admin-estado-tabla">
-                  Cargando pedidos pendientes...
-                </td>
+                <td colspan="4" class="texto-suave admin-estado-tabla">Cargando pedidos pendientes...</td>
               </tr>
             </tbody>
           </table>
@@ -217,7 +192,7 @@
       </div>
     </div>
 
-    <!-- ACORDEÓN 3: HABILITAR Y GESTIONAR TURNOS -->
+    <!-- ACORDEÓN 3: PUBLICAR Y GESTIONAR TURNOS -->
     <div class="acordeon-item">
       <button class="acordeon-header" onclick="toggleAcordeon('acc-turno', this)">
         <span><i class="ri-calendar-event-line icon"></i> Publicar y Gestionar Turnos</span>
@@ -317,7 +292,6 @@
         <div class="admin-clientes-encabezado">
           <span class="admin-clientes-descripcion">Lista general de usuarios:</span>
 
-          <!-- BOTONES DE ACCIÓN AGRUPADOS (CON SELECTOR DE AÑO GLOBAL) -->
           <div class="admin-clientes-acciones">
             <button id="btnDescargarClientesCSV" class="btn-app btn-descargar admin-btn-descargar-clientes">
               <i class="ri-file-download-line"></i> Descargar Clientes (CSV)
@@ -443,13 +417,12 @@
     </div>
 
     <!-- TEMPLATES OCULTOS PARA HISTORIAS -->
-    <div id="plantillaStoryAdmin" class="story-admin-container">
+    <div id="plantillaStoryAdmin">
       <div class="story-admin-wrapper">
         <h2 class="story-admin-title">¡GRACIAS<br>POR COMPOSTAR CON NOSOTROS!</h2>
         <h3 class="story-admin-subtitle">Hola <span id="storyAdminNombre">Cliente</span></h3>
-        <p class="story-admin-desc">Te compartimos tu impacto<br><span id="storyAdminAnioTexto">histórico</span> en
-          números</p>
-
+        <p class="story-admin-desc">Te compartimos tu impacto<br><span id="storyAdminAnioTexto">histórico</span> en números</p>
+        
         <div class="story-admin-grid">
           <div class="story-admin-card">
             <i class="ri-calendar-2-line story-admin-icon"></i>
@@ -478,16 +451,15 @@
           <span class="story-admin-footer-sub">ZONA de</span>
           <strong class="story-admin-footer-tit">COMPOST</strong>
         </div>
-        <img src="img/logo.webp" alt="Logo" class="story-admin-logo" />
+        <img src="/img/logo.webp" alt="Logo" class="story-admin-logo" />
       </div>
     </div>
 
-    <div id="plantillaStoryGlobal" class="story-admin-container">
+    <div id="plantillaStoryGlobal">
       <div class="story-admin-wrapper">
         <h2 class="story-admin-title">¡NUESTRO IMPACTO<br>COMUNITARIO!</h2>
-        <h3 class="story-admin-subtitle">Mirá lo que logramos juntos<br><span id="storyGlobalAnioTexto">hasta hoy</span>
-        </h3>
-
+        <h3 class="story-admin-subtitle">Mirá lo que logramos juntos<br><span id="storyGlobalAnioTexto">hasta hoy</span></h3>
+        
         <div class="story-admin-grid story-admin-grid-global">
           <div class="story-admin-card">
             <i class="ri-group-line story-admin-icon"></i>
@@ -516,7 +488,7 @@
           <span class="story-admin-footer-sub">ZONA de</span>
           <strong class="story-admin-footer-tit">COMPOST</strong>
         </div>
-        <img src="img/logo.webp" alt="Logo" class="story-admin-logo" />
+        <img src="/img/logo.webp" alt="Logo" class="story-admin-logo" />
       </div>
     </div>
 

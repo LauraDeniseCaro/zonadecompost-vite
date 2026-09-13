@@ -7,9 +7,19 @@ import {
   collection,
   query,
   where,
-  limit,
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  limit
+} from "firebase/firestore";
 import { db } from "./firebase-config.js";
+import Swal from "sweetalert2";
+
+// Configuración global de alert con SweetAlert2
+window.alert = function (mensaje) {
+  Swal.fire({
+    text: mensaje,
+    confirmButtonColor: '#16a34a',
+    confirmButtonText: 'Entendido'
+  });
+};
 
 // Guardamos el cliente en memoria tras el login
 let clienteLogueado = null;
@@ -51,7 +61,7 @@ function animarNumero(idElemento, valorFinal, decimales = 0, sufijo = "") {
   }, tiempoPaso);
 }
 
-// 🟢 VERSIÓN OPTIMIZADA: Solo hace 1 lectura a la base de datos en vez de traer a todos los usuarios
+// Carga optimizada de estadísticas globales
 async function cargarImpactoGlobal() {
   try {
     const docRef = doc(db, "estadisticas", "globales");
@@ -106,7 +116,7 @@ window.loginUsuario = async function (e) {
     if (adminSnap.exists() && valorIngresado === adminSnap.data().clave) {
       localStorage.setItem("esAdmin", "true");
       window.cerrarModalLogin();
-      window.location.href = "admin.html";
+      window.location.href = "/admin.html";
       return;
     }
 
@@ -120,7 +130,7 @@ window.loginUsuario = async function (e) {
       localStorage.removeItem("esAdmin");
 
       window.cerrarModalLogin();
-      window.location.href = "cliente.html";
+      window.location.href = "/cliente.html";
       return;
     }
 
@@ -142,7 +152,7 @@ window.loginUsuario = async function (e) {
         localStorage.removeItem("esAdmin");
 
         window.cerrarModalLogin();
-        window.location.href = "cliente.html";
+        window.location.href = "/cliente.html";
         return;
       }
     } catch (eConsulta) {
@@ -168,7 +178,7 @@ window.loginUsuario = async function (e) {
       localStorage.removeItem("esAdmin");
 
       window.cerrarModalLogin();
-      window.location.href = "cliente.html";
+      window.location.href = "/cliente.html";
       return;
     }
 

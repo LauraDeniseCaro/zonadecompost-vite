@@ -1,8 +1,19 @@
 import {
   doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, serverTimestamp,
   query, where, limit, increment, runTransaction
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+} from "firebase/firestore";
 import { db } from "./firebase-config.js";
+import Swal from "sweetalert2";
+import html2canvas from "html2canvas";
+
+// Configuración global de alertas con SweetAlert2
+window.alert = function (mensaje) {
+  Swal.fire({
+    text: mensaje,
+    confirmButtonColor: '#16a34a',
+    confirmButtonText: 'Entendido'
+  });
+};
 
 // Referencia al documento global de configuración de la agenda
 const docConfigRef = doc(db, "configuracion", "agenda");
@@ -10,15 +21,16 @@ const docConfigRef = doc(db, "configuracion", "agenda");
 // ==========================================================
 // CONTROL DE ACCESO Y SESIÓN ADMIN
 // ==========================================================
-const esAdmin = localStorage.getItem('esAdmin');
-if (!esAdmin || esAdmin !== 'true') {
+const esAdmin = localStorage.getItem('esAdmin') === 'true' || localStorage.getItem('adminLogueado') === 'true';
+if (!esAdmin) {
   alert("Acceso denegado. Debes ingresar como Administrador.");
-  window.location.href = "index.html";
+  window.location.href = "/index.html";
 }
 
 window.cerrarSesionAdmin = function () {
   localStorage.removeItem('esAdmin');
-  window.location.href = "index.html";
+  localStorage.removeItem('adminLogueado');
+  window.location.href = "/index.html";
 };
 
 // Variables globales para cachear datos de uso frecuente
@@ -412,7 +424,6 @@ if (btnCrearCliente) {
     }
 
     try {
-      // 🟢 NUEVA VALIDACIÓN: Verificar si el celular ya existe en la base de datos
       const docRef = doc(db, "usuarios", celuPrincipal);
       const docSnap = await getDoc(docRef);
 
@@ -423,7 +434,7 @@ if (btnCrearCliente) {
           text: '⚠️ Este número de celular ya está registrado. Para editar a este cliente, buscalo en la sección "Gestionar Cliente".',
           confirmButtonColor: '#eab308'
         });
-        return; // Frenamos la ejecución acá para no borrar nada
+        return;
       }
 
       await setDoc(docRef, {
@@ -447,7 +458,7 @@ if (btnCrearCliente) {
       document.getElementById('nuevaDireccion').value = "";
       if (inputFecha) inputFecha.value = "";
 
-      cargarClientesIniciales();
+      await cargarClientesIniciales();
       renderizarListaCompletaClientes();
       cargarEstadoCuentas();
 
@@ -694,7 +705,7 @@ if (btnLimpiar) {
 // ==========================================================
 async function cargarClientesIniciales() {
   try {
-    const q = query(collection(db, "usuarios"), limit(100));
+    const q = query(collection(db, "usuarios"), limit(300));
     const querySnapshot = await getDocs(q);
 
     ultimosClientes = [];
@@ -708,14 +719,13 @@ async function cargarClientesIniciales() {
   }
 }
 
-const buscador = document.getElementById('buscarClienteInput');
-const resultados = document.getElementById('resultadosBusquedaAdmin');
+function inicializarBuscadorClientes() {
+  const buscador = document.getElementById('buscarClienteInput');
+  const resultados = document.getElementById('resultadosBusquedaAdmin');
+  if (!buscador || !resultados) return;
 
-if (buscador) {
   buscador.addEventListener('input', async (e) => {
     const texto = e.target.value.toLowerCase().trim();
-    if (!resultados) return;
-
     resultados.innerHTML = '';
 
     if (texto.length === 0) {
@@ -835,6 +845,7 @@ function seleccionarCliente(cliente) {
 
   const formEdicion = document.getElementById('formEditarPerfilCliente');
   const cajaCliente = document.getElementById('cajaClienteSeleccionadoAdmin');
+  const resultados = document.getElementById('resultadosBusquedaAdmin');
 
   if (formEdicion) formEdicion.style.display = 'none';
   if (cajaCliente) cajaCliente.style.display = 'block';
@@ -849,8 +860,9 @@ async function cargarResumenEconomicoClienteAdmin(cliente) {
   if (contenedor) contenedor.innerHTML = '<p class="texto-suave">Cargando cuenta del cliente...</p>';
 
   try {
-    const zona = await obtenerZonaPorNombre(cliente.zona || 'General');
-    const precioActual = Number(zona?.precioBalde || 0);
+    // Lectura normalizada de zonas
+    const mapaPrecios = await obtenerMapaPreciosZonas();
+    const precioActual = Number(mapaPrecios.get(claveZona(cliente.zona)) || 0);
 
     if (precioEl) {
       precioEl.textContent = precioActual > 0 ? formatearMoneda(precioActual) : 'Sin configurar';
@@ -957,7 +969,7 @@ window.marcarRecoleccionPagada = async function (recoleccionId, clienteId) {
 
     Swal.fire({ icon: 'success', title: 'Pago registrado', timer: 1400, showConfirmButton: false });
     await refrescarClienteActual();
-    cargarClientesIniciales();
+    await cargarClientesIniciales();
     renderizarListaCompletaClientes();
     cargarEstadoCuentas();
     cargarPedidosAdmin();
@@ -976,6 +988,7 @@ const resetearSeleccionCliente = () => {
   const inputBusqueda = document.getElementById('buscarClienteInput');
   const inputId = document.getElementById('clienteSeleccionadoId');
   const cajaCliente = document.getElementById('cajaClienteSeleccionadoAdmin');
+  const resultados = document.getElementById('resultadosBusquedaAdmin');
 
   if (inputBusqueda) inputBusqueda.value = '';
   if (inputId) inputId.value = '';
@@ -1029,7 +1042,7 @@ if (btnGuardarEdicion) {
 
       Swal.fire('¡Cliente actualizado!', 'Los datos del perfil fueron guardados exitosamente.', 'success');
       await refrescarClienteActual();
-      cargarClientesIniciales();
+      await cargarClientesIniciales();
       renderizarListaCompletaClientes();
       cargarEstadoCuentas();
       cargarPedidosAdmin();
@@ -1070,9 +1083,7 @@ if (btnEliminar) {
         Swal.fire('Eliminado', 'El cliente fue eliminado de la base de datos.', 'success');
 
         resetearSeleccionCliente();
-        cargarClientesIniciales();
-        
-        // 🟢 Aseguramos que la tabla y el contador global se actualicen
+        await cargarClientesIniciales();
         renderizarListaCompletaClientes(); 
         cargarEstadoCuentas();
       } catch (error) {
@@ -1109,7 +1120,6 @@ if (btnSumarKilosYBaldes) {
       if (kilosNuevos > 0) payload.totalKilos = increment(kilosNuevos);
       if (baldesNuevos > 0) payload.baldesCompostados = increment(baldesNuevos);
 
-      // Guardamos registro con el año actual en la colección historial_impacto
       const añoActual = new Date().getFullYear().toString();
       await addDoc(collection(db, "historial_impacto"), {
         clienteId: clienteId,
@@ -1126,7 +1136,7 @@ if (btnSumarKilosYBaldes) {
       document.getElementById('baldesASumarInput').value = '0';
 
       await refrescarClienteActual();
-      cargarClientesIniciales();
+      await cargarClientesIniciales();
       renderizarListaCompletaClientes();
       cargarEstadoCuentas();
     } catch (error) {
@@ -1511,7 +1521,7 @@ window.marcarPedidoCompletado = async function (pedidoId) {
     });
 
     cargarPedidosAdmin();
-    cargarClientesIniciales();
+    await cargarClientesIniciales();
     renderizarListaCompletaClientes();
     cargarEstadoCuentas();
   } catch (err) {
@@ -1575,7 +1585,6 @@ async function renderizarListaCompletaClientes() {
       }
     });
 
-    // 🟢 ACTUALIZACIÓN SILENCIOSA DEL CONTADOR GLOBAL PARA EL HOME
     try {
       await setDoc(doc(db, "estadisticas", "globales"), {
         totalFamilias: syncFamilias,
@@ -1651,7 +1660,6 @@ async function cargarEstadoCuentas() {
     const [usuariosSnap, zonasSnap, recoleccionesSnap] = await Promise.all([
       getDocs(collection(db, 'usuarios')),
       getDocs(collection(db, 'zonas')),
-      // 🟢 CONSULTA OPTIMIZADA: Solo descarga las pendientes
       getDocs(query(collection(db, 'recolecciones'), where('estadoPago', '==', 'pendiente')))
     ]);
 
@@ -1892,7 +1900,6 @@ window.descargarSaldosPendientesCSV = async function () {
   try {
     const [usuariosSnap, recoleccionesSnap] = await Promise.all([
       getDocs(collection(db, 'usuarios')),
-      // 🟢 CONSULTA OPTIMIZADA: Solo trae pendientes para el CSV
       getDocs(query(collection(db, 'recolecciones'), where('estadoPago', '==', 'pendiente')))
     ]);
 
@@ -2139,11 +2146,12 @@ async function descargarStoryGlobal() {
 // ==========================================================
 // 13. INICIALIZACIÓN UNIFICADA DE PÁGINA
 // ==========================================================
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   cargarConfiguracionHorarioAdmin();
   renderizarListaZonas();
   cargarSelectsDeZonas();
-  cargarClientesIniciales();
+  await cargarClientesIniciales();
+  inicializarBuscadorClientes();
   cargarTurnosAdmin();
   cargarPedidosAdmin();
   renderizarListaCompletaClientes();
@@ -2155,8 +2163,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnDescargarStoryAdmin')?.addEventListener('click', descargarStoryClienteSeleccionado);
   document.getElementById('btnDescargarStoryGlobal')?.addEventListener('click', descargarStoryGlobal);
 
-  document.getElementById('btnRefrescarClientes')?.addEventListener('click', () => {
-    cargarClientesIniciales();
+  document.getElementById('btnRefrescarClientes')?.addEventListener('click', async () => {
+    await cargarClientesIniciales();
     renderizarListaCompletaClientes();
     cargarEstadoCuentas();
   });
