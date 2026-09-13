@@ -204,7 +204,7 @@ async function cargarInfoEconomicaCliente(cliente) {
   try {
     const zonasSnap = await getDocs(collection(db, 'zonas'));
     const mapaZonas = new Map();
-    
+
     // 🟢 CREAMOS UN MAPA LIMPIO DE ZONAS PARA EVITAR FALLOS
     zonasSnap.forEach(docSnap => {
       const z = docSnap.data();
@@ -312,7 +312,11 @@ function configurarBotonCompartir() {
         const file = new File([blob], 'mi-impacto-compost.png', { type: 'image/png' });
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Mi Impacto en Zona de Compost' });
+          await navigator.share({
+            files: [file],
+            title: 'Mi Impacto en Zona de Compost',
+            text: 'Estoy compostando con zona de compost y les comparto mi impacto en'
+          });
         } else {
           const enlace = document.createElement('a');
           enlace.download = 'mi-impacto-compost.png';
