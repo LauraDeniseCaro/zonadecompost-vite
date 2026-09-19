@@ -30,12 +30,20 @@ let clienteLogueado = null;
 
 window.abrirModalLogin = function () {
   const modal = document.getElementById("modalLogin");
-  if (modal) modal.style.display = "flex";
+  if (modal) {
+    modal.classList.remove("modal-oculto");
+    modal.style.display = "flex";
+    const input = document.getElementById("celuUsuario");
+    if (input) input.focus();
+  }
 };
 
 window.cerrarModalLogin = function () {
   const modal = document.getElementById("modalLogin");
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.classList.add("modal-oculto");
+    modal.style.display = "none";
+  }
 };
 
 // Función auxiliar para el efecto de conteo desde cero
@@ -100,11 +108,24 @@ async function cargarImpactoGlobal() {
 window.loginUsuario = async function (e) {
   if (e && e.preventDefault) e.preventDefault();
 
+  // 🟢 1. Deshabilitar el botón para evitar envíos múltiples por clics repetidos
+  const botonSubmit = e?.submitter || document.querySelector("#formLogin button[type='submit']");
+  if (botonSubmit) {
+    botonSubmit.disabled = true;
+    botonSubmit.dataset.textoOriginal = botonSubmit.innerHTML;
+    botonSubmit.innerHTML = '<i class="ri-loader-4-line icon-spin"></i> Ingresando...';
+  }
+
   const input = document.getElementById("celuUsuario");
   const valorIngresado = input ? input.value.trim() : "";
 
   if (!valorIngresado) {
     alert("Por favor, ingresá tu celular o contraseña.");
+    // Restauramos el botón si no completa nada
+    if (botonSubmit) {
+      botonSubmit.disabled = false;
+      botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || 'Ingresar';
+    }
     return;
   }
 
@@ -186,6 +207,12 @@ window.loginUsuario = async function (e) {
   } catch (error) {
     console.error("Error detallado en login:", error);
     alert("Hubo un inconveniente al conectar con el servidor: " + error.message);
+  } finally {
+    // 🟢 2. Reactivar el botón automáticamente si hubo error o credenciales incorrectas
+    if (botonSubmit) {
+      botonSubmit.disabled = false;
+      botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || 'Ingresar';
+    }
   }
 };
 

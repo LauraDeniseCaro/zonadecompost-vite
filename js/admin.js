@@ -4,7 +4,6 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase-config.js";
 import Swal from "sweetalert2";
-import html2canvas from "html2canvas";
 
 // Configuración global de alertas con SweetAlert2
 window.alert = function (mensaje) {
@@ -1084,7 +1083,7 @@ if (btnEliminar) {
 
         resetearSeleccionCliente();
         await cargarClientesIniciales();
-        renderizarListaCompletaClientes(); 
+        renderizarListaCompletaClientes();
         cargarEstadoCuentas();
       } catch (error) {
         console.error("Error al eliminar cliente:", error);
@@ -1558,48 +1557,67 @@ window.descargarHojaDeRutaCSV = function () {
 };
 
 // ==========================================================
-// 8. TABLA GENERAL DE CLIENTES REGISTRADOS
+// 8. TABLA GENERAL DE CLIENTES REGISTRADOS (CON PAGINACIÓN)
 // ==========================================================
-async function renderizarListaCompletaClientes() {
+let ultimoDocClientePaginado = null;
+let clientesPaginadosCache = [];
+const TAMANIO_PAGINA_CLIENTES = 20;
+
+async function renderizarListaCompletaClientes(cargarMas = false) {
   const contenedor = document.getElementById('contenedorListaClientes');
+  const btnCargarMas = document.getElementById('btnCargarMasClientes');
   if (!contenedor) return;
 
-  contenedor.innerHTML = '<p class="texto-suave">Cargando lista de clientes...</p>';
+  if (!cargarMas) {
+    contenedor.innerHTML = '<p class="texto-suave">Cargando lista de clientes...</p>';
+    ultimoDocClientePaginado = null;
+    clientesPaginadosCache = [];
+  } else if (btnCargarMas) {
+    btnCargarMas.disabled = true;
+    btnCargarMas.innerHTML = '<i class="ri-loader-4-line"></i> Cargando...';
+  }
 
   try {
-    const [usuariosSnap, preciosPorZona] = await Promise.all([
-      getDocs(collection(db, 'usuarios')),
-      obtenerMapaPreciosZonas()
-    ]);
+    const mapaPrecios = await obtenerMapaPreciosZonas();
 
-    const clientes = [];
-    let syncKilos = 0;
-    let syncFamilias = 0;
+    // Consulta con límite y cursor de paginación
+    let qClientes = query(
+      collection(db, 'usuarios'),
+      limit(TAMANIO_PAGINA_CLIENTES)
+    );
 
-    usuariosSnap.forEach((docSnap) => {
-      if (docSnap.id !== 'admin') {
-        const data = docSnap.data();
-        clientes.push({ id: docSnap.id, ...data });
-        syncFamilias++;
-        syncKilos += Number(data.totalKilos || 0);
-      }
-    });
-
-    try {
-      await setDoc(doc(db, "estadisticas", "globales"), {
-        totalFamilias: syncFamilias,
-        totalKilos: syncKilos
-      }, { merge: true });
-    } catch(e) {
-      console.error("Error sincronizando estadísticas globales:", e);
+    if (cargarMas && ultimoDocClientePaginado) {
+      const { startAfter } = await import("firebase/firestore");
+      qClientes = query(
+        collection(db, 'usuarios'),
+        startAfter(ultimoDocClientePaginado),
+        limit(TAMANIO_PAGINA_CLIENTES)
+      );
     }
 
-    if (clientes.length === 0) {
+    const snap = await getDocs(qClientes);
+
+    if (snap.empty && !cargarMas) {
       contenedor.innerHTML = '<p class="texto-suave">No hay clientes registrados.</p>';
+      if (btnCargarMas) btnCargarMas.style.display = 'none';
       return;
     }
 
-    clientes.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+    snap.forEach((docSnap) => {
+      if (docSnap.id !== 'admin') {
+        clientesPaginadosCache.push({ id: docSnap.id, ...docSnap.data() });
+      }
+    });
+
+    // Guardar referencia del último documento para el próximo bloque
+    ultimoDocClientePaginado = snap.docs[snap.docs.length - 1] || null;
+
+    // Mostrar u ocultar el botón según si quedan más registros
+    if (btnCargarMas) {
+      btnCargarMas.disabled = false;
+      btnCargarMas.innerHTML = '<i class="ri-arrow-down-line"></i> Cargar más clientes';
+      btnCargarMas.style.display = snap.docs.length >= TAMANIO_PAGINA_CLIENTES ? 'inline-flex' : 'none';
+    }
 
     let html = `
       <div class="admin-table-scroll">
@@ -1618,10 +1636,10 @@ async function renderizarListaCompletaClientes() {
           <tbody>
     `;
 
-    clientes.forEach((c) => {
+    clientesPaginadosCache.forEach((c) => {
       const saldo = Number(c.saldoPendiente || 0);
       const tieneDeuda = saldo > 0;
-      const precioBalde = Number(preciosPorZona.get(claveZona(c.zona)) || 0);
+      const precioBalde = Number(mapaPrecios.get(claveZona(c.zona)) || 0);
       html += `
         <tr>
           <td><strong>${c.nombre || 'Sin Nombre'}</strong></td>
@@ -1641,8 +1659,9 @@ async function renderizarListaCompletaClientes() {
 
     html += '</tbody></table></div>';
     contenedor.innerHTML = html;
+
   } catch (error) {
-    console.error('Error al obtener la lista de clientes:', error);
+    console.error('Error cargando clientes paginados:', error);
     contenedor.innerHTML = '<p class="admin-mensaje-error">Error al cargar la lista de clientes.</p>';
   }
 }
@@ -2019,6 +2038,10 @@ async function descargarStoryClienteSeleccionado() {
       btn.innerHTML = '<i class="ri-loader-4-line"></i> Generando...';
     }
 
+    // 🟢 Importación dinámica de html2canvas justo en el momento del click
+    const html2canvasModule = await import('html2canvas');
+    const html2canvas = html2canvasModule.default;
+
     const canvas = await html2canvas(storyElem, {
       scale: 1,
       useCORS: true,
@@ -2110,6 +2133,10 @@ async function descargarStoryGlobal() {
     document.getElementById('storyGlobalBaldes').innerText = sumaBaldes;
     document.getElementById('storyGlobalCompost').innerText = `${compostGenerado} kg`;
 
+    // 🟢 Importación dinámica de html2canvas para la Story Global
+    const html2canvasModule = await import('html2canvas');
+    const html2canvas = html2canvasModule.default;
+
     const canvas = await html2canvas(storyElem, {
       scale: 1,
       useCORS: true,
@@ -2171,5 +2198,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btnRefrescarEstadoCuentas')?.addEventListener('click', () => {
     cargarEstadoCuentas();
+  });
+
+  document.getElementById('btnCargarMasClientes')?.addEventListener('click', () => {
+    renderizarListaCompletaClientes(true);
   });
 });

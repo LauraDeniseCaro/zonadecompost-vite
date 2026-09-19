@@ -25,7 +25,7 @@
   <meta name="twitter:description"
     content="Servicio de recolección de orgánicos domiciliarios y compostaje en Bariloche." />
   <meta name="twitter:image" content="https://zonadecompost.vercel.app/img/og-preview.jpg" />
-  
+
   <link rel="icon" type="image/webp" href="/img/logo.webp" />
   <link rel="stylesheet" href="/css/global.css" />
   <link rel="stylesheet" href="/css/admin.css" />
@@ -54,7 +54,8 @@
       <div id="acc-buscar" class="acordeon-contenido seccion tarjeta-primario">
         <div class="form-group" id="cajaInputBusquedaAdmin">
           <label for="buscarClienteInput">Buscar Cliente (Nombre o Celular):</label>
-          <input type="text" id="buscarClienteInput" class="form-control" placeholder="Ej: Juan o 456789" autocomplete="off">
+          <input type="text" id="buscarClienteInput" class="form-control" placeholder="Ej: Juan o 456789"
+            autocomplete="off">
           <div id="resultadosBusquedaAdmin" class="resultados-busqueda-dropdown admin-oculto"></div>
         </div>
 
@@ -126,7 +127,8 @@
           </div>
 
           <div class="admin-panel-operativo">
-            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-recycle-line"></i> Carga manual de Kilos y Baldes</h4>
+            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-recycle-line"></i> Carga manual de Kilos y
+              Baldes</h4>
             <div class="admin-grid-2">
               <div class="form-group">
                 <label for="kilosASumarInput">Kilos A Sumar:</label>
@@ -143,7 +145,8 @@
 
             <hr class="admin-separador">
 
-            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-money-dollar-circle-line"></i> Recolecciones Pendientes de Pago</h4>
+            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-money-dollar-circle-line"></i>
+              Recolecciones Pendientes de Pago</h4>
             <div id="contenedorDeudasClienteAdmin">
               <p class="texto-suave">Seleccioná un cliente para ver su estado de cuenta.</p>
             </div>
@@ -318,6 +321,11 @@
         <div id="contenedorListaClientes" class="admin-lista-clientes">
           <p class="texto-suave">Cargando lista de clientes...</p>
         </div>
+        <div class="admin-paginacion-contenedor" style="text-align: center; margin-top: 16px;">
+          <button id="btnCargarMasClientes" type="button" class="btn-app btn-app-secundario" style="display: none;">
+            <i class="ri-arrow-down-line"></i> Cargar más clientes
+          </button>
+        </div>
       </div>
     </div>
 
@@ -421,8 +429,9 @@
       <div class="story-admin-wrapper">
         <h2 class="story-admin-title">¡GRACIAS<br>POR COMPOSTAR CON NOSOTROS!</h2>
         <h3 class="story-admin-subtitle">Hola <span id="storyAdminNombre">Cliente</span></h3>
-        <p class="story-admin-desc">Te compartimos tu impacto<br><span id="storyAdminAnioTexto">histórico</span> en números</p>
-        
+        <p class="story-admin-desc">Te compartimos tu impacto<br><span id="storyAdminAnioTexto">histórico</span> en
+          números</p>
+
         <div class="story-admin-grid">
           <div class="story-admin-card">
             <i class="ri-calendar-2-line story-admin-icon"></i>
@@ -458,8 +467,9 @@
     <div id="plantillaStoryGlobal">
       <div class="story-admin-wrapper">
         <h2 class="story-admin-title">¡NUESTRO IMPACTO<br>COMUNITARIO!</h2>
-        <h3 class="story-admin-subtitle">Mirá lo que logramos juntos<br><span id="storyGlobalAnioTexto">hasta hoy</span></h3>
-        
+        <h3 class="story-admin-subtitle">Mirá lo que logramos juntos<br><span id="storyGlobalAnioTexto">hasta hoy</span>
+        </h3>
+
         <div class="story-admin-grid story-admin-grid-global">
           <div class="story-admin-card">
             <i class="ri-group-line story-admin-icon"></i>
