@@ -477,3 +477,116 @@
 
 #plantillaStoryAdmin .story-admin-logo,
 #plantillaStoryGlobal .story-admin-logo { height: 85px; width: auto; object-fit: contain; }
+
+/* ==========================================================
+   ESTILOS EXCLUSIVOS PARA IMPRESIÓN / PDF (HOJA DE RUTA)
+   ========================================================== */
+@page {
+  size: A4 portrait;
+  margin: 12mm 10mm;
+}
+
+@media print {
+  /* 1. Elementos que no van al papel o PDF */
+  header,
+  nav,
+  aside,
+  button,
+  input,
+  select,
+  .no-print,
+  .swal2-container,
+  #modalLogin,
+  #plantillaStoryAdmin,
+  #plantillaStoryGlobal,
+  .admin-story-controls,
+  .admin-panel-edicion,
+  .panel-config-agenda,
+  .admin-turnos-bloque,
+  .admin-fila-acciones,
+  .admin-barra-botones,
+  .admin-clientes-acciones,
+  .admin-btn-ancho-completo {
+    display: none !important;
+  }
+
+  /* 2. Ajuste limpio de página y contenedor */
+  html, body, .pagina-admin {
+    background: #ffffff;
+    color: #000000;
+    font-size: 11pt;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .pagina-admin .contenedor-principal {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pagina-admin .acordeon-item,
+  .pagina-admin .acordeon-contenido {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+  }
+
+  /* 3. Tabla de Hoja de Ruta completa y nítida */
+  .pagina-admin #acc-hoja .contenedor-tabla-elegante,
+  .admin-table-scroll {
+    overflow: visible;
+  }
+
+  .pagina-admin #acc-hoja .tabla-admin {
+    width: 100%;
+    min-width: 100%;
+    border-collapse: collapse;
+    box-shadow: none;
+    background: #ffffff;
+  }
+
+  .pagina-admin #acc-hoja .tabla-admin th,
+  .pagina-admin #acc-hoja .tabla-admin td {
+    border: 1px solid #cbd5e1;
+    padding: 6px 8px;
+    color: #0f172a;
+    font-size: 10pt;
+  }
+
+  /* Filas de agrupamiento legibles sin saturar tinta */
+  .ruta-dia-row {
+    background-color: #e2e8f0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .ruta-dia-cell {
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  .ruta-zona-row {
+    background-color: #f8fafc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .ruta-zona-cell {
+    color: #334155;
+  }
+
+  /* 4. Saltos de página inteligentes */
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}

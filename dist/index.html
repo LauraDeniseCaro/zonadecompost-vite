@@ -4,7 +4,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ 
+  <!-- 🟢 Configuración PWA / Móvil -->
+  <meta name="theme-color" content="#16a34a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Zona de Compost" />
+
+  <!-- Preconexión a Firestore -->
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+
   <title>Zona de Compost - Bariloche</title>
+
+
   <!-- METADATOS DE PREVISUALIZACIÓN (OPEN GRAPH / SOCIAL SHARE) -->
   <meta name="description"
     content="Servicio de recolección de residuos orgánicos domiciliarios y compostaje en San Carlos de Bariloche. Transformamos residuos en vida." />
@@ -34,7 +47,7 @@
   <link rel="modulepreload" crossorigin href="/assets/sweetalert2.esm.all-BfUNtD_y.js">
   <link rel="stylesheet" crossorigin href="/assets/sweetalert2.esm-Cn5Zm_LY.css">
   <link rel="stylesheet" crossorigin href="/assets/main-T5WVQwEl.css">
-</head>
+<link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
 
 <body class="pagina-publica">
   <!-- HEADER / MENÚ DE NAVEGACIÓN -->
@@ -294,7 +307,8 @@
         y ver tus estadísticas.
       </p>
       <form id="formLogin">
-        <input type="tel" inputmode="numeric" id="celuUsuario" placeholder="Ej: 456789" maxlength="6" class="input-celular" required />
+        <input type="tel" inputmode="numeric" id="celuUsuario" placeholder="Ej: 456789" maxlength="6"
+          class="input-celular" required />
         <button type="submit" class="btn-login-confirmar">
           <i class="ri-arrow-right-line icon"></i> Ingresar
         </button>
