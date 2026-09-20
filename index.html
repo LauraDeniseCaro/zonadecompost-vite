@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- 
+
   <!-- 🟢 Configuración PWA / Móvil -->
   <meta name="theme-color" content="#16a34a" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -296,18 +296,49 @@
   <!-- VENTANA MODAL PARA LOGUEO -->
   <div id="modalLogin" class="bloqueo-overlay modal-oculto">
     <div class="bloqueo-caja">
-      <span class="cerrar-modal" onclick="cerrarModalLogin()">&times;</span>
+      <button type="button" class="cerrar-modal" onclick="cerrarModalLogin()" aria-label="Cerrar modal">&times;</button>
+
       <h3>
-        <i class="ri-user-check-line icon"></i> Ingresar a mi Panel
+        <i class="ri-shield-keyhole-line icon"></i> Ingresar al Sistema
       </h3>
-      <p class="subtitulo-modal">
-        Colocá los últimos 6 números de tu celular para gestionar tus retiros
-        y ver tus estadísticas.
-      </p>
+      <p class="subtitulo-modal">Seleccioná tu tipo de acceso</p>
+
+      <!-- Selector de pestañas -->
+      <div class="tabs-login">
+        <button type="button" id="tabCliente" class="tab-btn activo" onclick="cambiarModoLogin('cliente')">
+          <i class="ri-user-3-line"></i> Vecino / Cliente
+        </button>
+        <button type="button" id="tabAdmin" class="tab-btn" onclick="cambiarModoLogin('admin')">
+          <i class="ri-admin-line"></i> Administrador
+        </button>
+      </div>
+
       <form id="formLogin">
-        <input type="tel" inputmode="numeric" id="celuUsuario" placeholder="Ej: 456789" maxlength="6"
-          class="input-celular" required />
-        <button type="submit" class="btn-login-confirmar">
+        <!-- Campos para VECINO / CLIENTE -->
+        <div id="camposClienteLogin" class="grupo-login-campos">
+          <p class="subtitulo-modal subtitulo-ayuda-celular">
+            Colocá los últimos 6 números de tu celular:
+          </p>
+          <input type="tel" inputmode="numeric" id="celuUsuario" placeholder="Ej: 456789" maxlength="6"
+            class="input-celular" autocomplete="tel" />
+        </div>
+
+        <!-- Campos para ADMINISTRADOR (oculto por clase) -->
+        <div id="camposAdminLogin" class="grupo-login-campos admin-campos-login seccion-oculta">
+          <label for="adminEmail" class="label-login-admin">
+            Correo electrónico
+          </label>
+          <input type="email" id="adminEmail" placeholder="admin@zonadecompost.com" class="input-celular input-admin"
+            autocomplete="email" />
+
+          <label for="adminPass" class="label-login-admin">
+            Contraseña
+          </label>
+          <input type="password" id="adminPass" placeholder="••••••••" class="input-celular input-admin"
+            autocomplete="current-password" />
+        </div>
+
+        <button type="submit" id="btnSubmitLogin" class="btn-login-confirmar btn-login-bloque">
           <i class="ri-arrow-right-line icon"></i> Ingresar
         </button>
       </form>

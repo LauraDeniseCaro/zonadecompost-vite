@@ -78,3 +78,81 @@
   .inicio-impacto-grid { gap: 8px; }
   .inicio-impacto-valor { font-size: 24px; }
 }
+
+/* ==========================================================
+   MODAL DE INICIO DE SESIÓN — TABS Y FORMULARIO ADMIN/CLIENTE
+   ========================================================== */
+
+/* Pestañas para alternar entre Cliente y Administrador */
+.pagina-publica .tabs-login {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.pagina-publica .tab-btn {
+  flex: 1;
+  width: auto;
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.pagina-publica .tab-btn:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-oscuro);
+  transform: none;
+}
+
+.pagina-publica .tab-btn.activo {
+  background: #ffffff;
+  color: #16a34a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Textos de ayuda y etiquetas dentro del modal */
+.pagina-publica .subtitulo-ayuda-celular {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.pagina-publica .admin-campos-login {
+  text-align: left;
+}
+
+.pagina-publica .label-login-admin {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pagina-publica .input-admin {
+  margin-bottom: 12px;
+  text-align: left;
+  padding: 11px 14px;
+}
+
+.pagina-publica .btn-login-bloque {
+  margin-top: 14px;
+  width: 100%;
+}
+
+/* Clase utilitaria para ocultar secciones sin styles inline */
+.pagina-publica .seccion-oculta {
+  display: none !important;
+}

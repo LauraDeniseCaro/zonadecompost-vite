@@ -29,13 +29,36 @@ let clienteLogueado = null;
 // A. FUNCIONES DEL MODAL DE LOGIN Y CONTADOR GLOBAL
 // ==========================================================
 
+// Variable para saber qué pestaña está seleccionada
+let modoLoginActual = 'cliente';
+
+window.cambiarModoLogin = function (modo) {
+  modoLoginActual = modo;
+  const tabCli = document.getElementById("tabCliente");
+  const tabAdm = document.getElementById("tabAdmin");
+  const camposCli = document.getElementById("camposClienteLogin");
+  const camposAdm = document.getElementById("camposAdminLogin");
+
+  if (modo === 'admin') {
+    tabAdm?.classList.add("activo");
+    tabCli?.classList.remove("activo");
+    camposCli?.classList.add("seccion-oculta");
+    camposAdm?.classList.remove("seccion-oculta");
+    document.getElementById("adminEmail")?.focus();
+  } else {
+    tabCli?.classList.add("activo");
+    tabAdm?.classList.remove("activo");
+    camposCli?.classList.remove("seccion-oculta");
+    camposAdm?.classList.add("seccion-oculta");
+    document.getElementById("celuUsuario")?.focus();
+  }
+};
+
 window.abrirModalLogin = function () {
   const modal = document.getElementById("modalLogin");
   if (modal) {
     modal.classList.remove("modal-oculto");
-    modal.style.display = "flex";
-    const input = document.getElementById("celuUsuario");
-    if (input) input.focus();
+    window.cambiarModoLogin('cliente'); // Abre siempre en modo cliente por defecto
   }
 };
 
@@ -43,7 +66,6 @@ window.cerrarModalLogin = function () {
   const modal = document.getElementById("modalLogin");
   if (modal) {
     modal.classList.add("modal-oculto");
-    modal.style.display = "none";
   }
 };
 
@@ -52,7 +74,7 @@ function animarNumero(idElemento, valorFinal, decimales = 0, sufijo = "") {
   const elemento = document.getElementById(idElemento);
   if (!elemento) return;
 
-  const duracion = 1500; // Tiempo total de animación en ms (1.5 segundos)
+  const duracion = 1500;
   const pasos = 40;
   const incremento = valorFinal / pasos;
   const tiempoPaso = duracion / pasos;
@@ -84,7 +106,6 @@ async function cargarImpactoGlobal() {
       sumaKilos = Number(data.totalKilos || 0);
       clientesActivos = Number(data.totalFamilias || 0);
     } else {
-      // Fallback de seguridad temporal
       const querySnapshot = await getDocs(collection(db, "usuarios"));
       querySnapshot.forEach((d) => {
         if (d.id !== "admin") {
@@ -94,7 +115,6 @@ async function cargarImpactoGlobal() {
       });
     }
 
-    // Animación exclusiva de Kilos y Familias
     animarNumero("contadorKilos", sumaKilos, 1);
     animarNumero("contadorClientes", clientesActivos, 0);
 
@@ -109,105 +129,64 @@ async function cargarImpactoGlobal() {
 window.loginUsuario = async function (e) {
   if (e && e.preventDefault) e.preventDefault();
 
-  const botonSubmit = e?.submitter || document.querySelector("#formLogin button[type='submit']");
+  const botonSubmit = document.getElementById("btnSubmitLogin") || e?.submitter;
   if (botonSubmit) {
     botonSubmit.disabled = true;
     botonSubmit.dataset.textoOriginal = botonSubmit.innerHTML;
     botonSubmit.innerHTML = '<i class="ri-loader-4-line icon-spin"></i> Ingresando...';
   }
 
-  const input = document.getElementById("celuUsuario");
-  const valorIngresado = input ? input.value.trim() : "";
-
-  if (!valorIngresado) {
-    alert("Por favor, ingresá tu celular o usuario.");
-    if (botonSubmit) {
-      botonSubmit.disabled = false;
-      botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || 'Ingresar';
-    }
-    return;
-  }
-
   try {
-    // --------------------------------------------------------
-    // 1. INGRESO DE ADMINISTRADOR (FIREBASE AUTH)
-    // Si escribe "admin", su email o detecta el acceso del panel
-    // --------------------------------------------------------
-    if (valorIngresado.toLowerCase() === "admin" || valorIngresado.includes("@")) {
-      window.cerrarModalLogin();
+    // 1. SI ESTÁ EN MODO ADMINISTRADOR (Email + Contraseña formal)
+    if (modoLoginActual === 'admin') {
+      const email = document.getElementById("adminEmail")?.value.trim();
+      const pass = document.getElementById("adminPass")?.value;
 
-      const { value: formValores } = await Swal.fire({
-        title: 'Acceso Administrador',
-        html: `
-          <input id="swalAdminEmail" type="email" class="swal2-input" placeholder="Correo electrónico" value="${valorIngresado.includes('@') ? valorIngresado : ''}">
-          <input id="swalAdminPass" type="password" class="swal2-input" placeholder="Contraseña">
-        `,
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: 'Ingresar',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#16a34a',
-        cancelButtonColor: '#64748b',
-        preConfirm: () => {
-          const email = document.getElementById('swalAdminEmail').value.trim();
-          const pass = document.getElementById('swalAdminPass').value;
-          if (!email || !pass) {
-            Swal.showValidationMessage('Completá el correo y la contraseña');
-            return false;
-          }
-          return { email, pass };
-        }
-      });
-
-      if (!formValores) {
-        if (botonSubmit) {
-          botonSubmit.disabled = false;
-          botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || 'Ingresar';
-        }
+      if (!email || !pass) {
+        alert("Por favor completá el correo y la contraseña.");
         return;
       }
 
-      // Autenticación formal en los servidores de Firebase
-      await signInWithEmailAndPassword(auth, formValores.email, formValores.pass);
-
+      await signInWithEmailAndPassword(auth, email, pass);
       localStorage.removeItem("usuarioCelu");
       window.location.href = "/admin.html";
       return;
     }
 
-    // --------------------------------------------------------
-    // 2. INGRESO DE CLIENTE: Búsqueda por Celular Principal (6 dígitos)
-    // --------------------------------------------------------
+    // 2. SI ESTÁ EN MODO CLIENTE (Celular de 6 dígitos)
+    const inputCelu = document.getElementById("celuUsuario");
+    const valorIngresado = inputCelu ? inputCelu.value.trim() : "";
+
+    if (!valorIngresado) {
+      alert("Por favor ingresá tu número de celular.");
+      return;
+    }
+
+    // Búsqueda por Celular Principal
     const docRef = doc(db, "usuarios", valorIngresado);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists() && valorIngresado !== "admin") {
       clienteLogueado = { id: docSnap.id, ...docSnap.data() };
       localStorage.setItem("usuarioCelu", docSnap.id);
-
       window.cerrarModalLogin();
       window.location.href = "/cliente.html";
       return;
     }
 
-    // --------------------------------------------------------
-    // 3. INGRESO DE CLIENTE: Búsqueda por Celular Secundario
-    // --------------------------------------------------------
+    // Búsqueda por Celular Secundario
     try {
       const qSecundario = query(
         collection(db, "usuarios"),
         where("celularesAsociados", "array-contains", valorIngresado),
         limit(1)
       );
-
       const querySnapshot = await getDocs(qSecundario);
 
       if (!querySnapshot.empty) {
         const clienteDoc = querySnapshot.docs[0];
         clienteLogueado = { id: clienteDoc.id, ...clienteDoc.data() };
-
         localStorage.setItem("usuarioCelu", clienteDoc.id);
-
         window.cerrarModalLogin();
         window.location.href = "/cliente.html";
         return;
@@ -216,16 +195,13 @@ window.loginUsuario = async function (e) {
       console.warn("Fallo en la consulta array-contains...", eConsulta);
     }
 
-    // --------------------------------------------------------
-    // 4. PLAN B (Fallback): Escaneo manual de clientes
-    // --------------------------------------------------------
+    // Fallback: Escaneo manual de clientes
     const todosSnapshot = await getDocs(collection(db, "usuarios"));
     let usuarioEncontrado = null;
 
     todosSnapshot.forEach((docSnap) => {
       if (docSnap.id === "admin") return;
       const data = docSnap.data();
-
       if (Array.isArray(data.celularesAsociados) && data.celularesAsociados.includes(valorIngresado)) {
         usuarioEncontrado = { id: docSnap.id, ...data };
       }
@@ -234,24 +210,28 @@ window.loginUsuario = async function (e) {
     if (usuarioEncontrado) {
       clienteLogueado = usuarioEncontrado;
       localStorage.setItem("usuarioCelu", usuarioEncontrado.id);
-
       window.cerrarModalLogin();
       window.location.href = "/cliente.html";
       return;
     }
 
     alert("El número de celular ingresado no figura registrado.");
+
   } catch (error) {
-    console.error("Error detallado en login:", error);
-    if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-      alert("Credenciales de administrador incorrectas.");
+    console.error("Error en login:", error);
+    if (
+      error.code === 'auth/invalid-credential' ||
+      error.code === 'auth/user-not-found' ||
+      error.code === 'auth/wrong-password'
+    ) {
+      alert("Correo o contraseña de administrador incorrectos.");
     } else {
       alert("Hubo un inconveniente al conectar con el servidor: " + error.message);
     }
   } finally {
     if (botonSubmit) {
       botonSubmit.disabled = false;
-      botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || 'Ingresar';
+      botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || '<i class="ri-arrow-right-line icon"></i> Ingresar';
     }
   }
 };
