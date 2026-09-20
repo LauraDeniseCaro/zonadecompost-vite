@@ -1,27 +1,31 @@
 // js/firebase-config.js
 import { initializeApp } from "firebase/app";
-import { 
-  initializeFirestore, 
-  persistentLocalCache, 
-  persistentMultipleTabManager 
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
 } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDbMkfP-CFLkugdzYNEo2nx_daE36IR17Q",
-  authDomain: "zonadecompost-4d754.firebaseapp.com",
-  projectId: "zonadecompost-4d754",
-  storageBucket: "zonadecompost-4d754.firebasestorage.app",
-  messagingSenderId: "113533519094",
-  appId: "1:113533519094:web:925c726bc882a51aa858d7"
+  apiKey: "AIzaSyCBbtC5JCgM2H6Gehwa2GepNBddxvqwzso",
+  authDomain: "zonacompost-app.firebaseapp.com",
+  projectId: "zonacompost-app",
+  storageBucket: "zonacompost-app.firebasestorage.app",
+  messagingSenderId: "956257073147",
+  appId: "1:956257073147:web:6b6b12c59a1f24e86a3d5e"
 };
 
 const app = initializeApp(firebaseConfig);
 
-// Inicializa Firestore con almacenamiento local persistente y soporte para múltiples pestañas
+// Inicializa Firestore con almacenamiento local persistente
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
 });
 
-export { app, db };
+// Inicializa Authentication
+const auth = getAuth(app);
+
+export { app, db, auth };

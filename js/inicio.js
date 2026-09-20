@@ -9,7 +9,8 @@ import {
   where,
   limit
 } from "firebase/firestore";
-import { db } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import Swal from "sweetalert2";
 
 // Configuración global de alert con SweetAlert2
@@ -103,12 +104,11 @@ async function cargarImpactoGlobal() {
 }
 
 // ==========================================================
-// B. LÓGICA DE LOGIN DEL CLIENTE (Redirección a cliente.html)
+// B. LÓGICA DE LOGIN (CLIENTE POR CELULAR / ADMIN POR FIREBASE AUTH)
 // ==========================================================
 window.loginUsuario = async function (e) {
   if (e && e.preventDefault) e.preventDefault();
 
-  // 🟢 1. Deshabilitar el botón para evitar envíos múltiples por clics repetidos
   const botonSubmit = e?.submitter || document.querySelector("#formLogin button[type='submit']");
   if (botonSubmit) {
     botonSubmit.disabled = true;
@@ -120,8 +120,7 @@ window.loginUsuario = async function (e) {
   const valorIngresado = input ? input.value.trim() : "";
 
   if (!valorIngresado) {
-    alert("Por favor, ingresá tu celular o contraseña.");
-    // Restauramos el botón si no completa nada
+    alert("Por favor, ingresá tu celular o usuario.");
     if (botonSubmit) {
       botonSubmit.disabled = false;
       botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || 'Ingresar';
@@ -130,32 +129,70 @@ window.loginUsuario = async function (e) {
   }
 
   try {
-    // 1. Verificación de Contraseña Administrador
-    const adminRef = doc(db, "usuarios", "admin");
-    const adminSnap = await getDoc(adminRef);
-
-    if (adminSnap.exists() && valorIngresado === adminSnap.data().clave) {
-      localStorage.setItem("esAdmin", "true");
+    // --------------------------------------------------------
+    // 1. INGRESO DE ADMINISTRADOR (FIREBASE AUTH)
+    // Si escribe "admin", su email o detecta el acceso del panel
+    // --------------------------------------------------------
+    if (valorIngresado.toLowerCase() === "admin" || valorIngresado.includes("@")) {
       window.cerrarModalLogin();
+
+      const { value: formValores } = await Swal.fire({
+        title: 'Acceso Administrador',
+        html: `
+          <input id="swalAdminEmail" type="email" class="swal2-input" placeholder="Correo electrónico" value="${valorIngresado.includes('@') ? valorIngresado : ''}">
+          <input id="swalAdminPass" type="password" class="swal2-input" placeholder="Contraseña">
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Ingresar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#64748b',
+        preConfirm: () => {
+          const email = document.getElementById('swalAdminEmail').value.trim();
+          const pass = document.getElementById('swalAdminPass').value;
+          if (!email || !pass) {
+            Swal.showValidationMessage('Completá el correo y la contraseña');
+            return false;
+          }
+          return { email, pass };
+        }
+      });
+
+      if (!formValores) {
+        if (botonSubmit) {
+          botonSubmit.disabled = false;
+          botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || 'Ingresar';
+        }
+        return;
+      }
+
+      // Autenticación formal en los servidores de Firebase
+      await signInWithEmailAndPassword(auth, formValores.email, formValores.pass);
+
+      localStorage.removeItem("usuarioCelu");
       window.location.href = "/admin.html";
       return;
     }
 
-    // 2. Búsqueda por Celular Principal
+    // --------------------------------------------------------
+    // 2. INGRESO DE CLIENTE: Búsqueda por Celular Principal (6 dígitos)
+    // --------------------------------------------------------
     const docRef = doc(db, "usuarios", valorIngresado);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists() && valorIngresado !== "admin") {
       clienteLogueado = { id: docSnap.id, ...docSnap.data() };
       localStorage.setItem("usuarioCelu", docSnap.id);
-      localStorage.removeItem("esAdmin");
 
       window.cerrarModalLogin();
       window.location.href = "/cliente.html";
       return;
     }
 
-    // 3. Búsqueda por Celular Secundario
+    // --------------------------------------------------------
+    // 3. INGRESO DE CLIENTE: Búsqueda por Celular Secundario
+    // --------------------------------------------------------
     try {
       const qSecundario = query(
         collection(db, "usuarios"),
@@ -170,7 +207,6 @@ window.loginUsuario = async function (e) {
         clienteLogueado = { id: clienteDoc.id, ...clienteDoc.data() };
 
         localStorage.setItem("usuarioCelu", clienteDoc.id);
-        localStorage.removeItem("esAdmin");
 
         window.cerrarModalLogin();
         window.location.href = "/cliente.html";
@@ -180,7 +216,9 @@ window.loginUsuario = async function (e) {
       console.warn("Fallo en la consulta array-contains...", eConsulta);
     }
 
-    // 4. PLAN B (Fallback): Escaneo manual
+    // --------------------------------------------------------
+    // 4. PLAN B (Fallback): Escaneo manual de clientes
+    // --------------------------------------------------------
     const todosSnapshot = await getDocs(collection(db, "usuarios"));
     let usuarioEncontrado = null;
 
@@ -196,19 +234,21 @@ window.loginUsuario = async function (e) {
     if (usuarioEncontrado) {
       clienteLogueado = usuarioEncontrado;
       localStorage.setItem("usuarioCelu", usuarioEncontrado.id);
-      localStorage.removeItem("esAdmin");
 
       window.cerrarModalLogin();
       window.location.href = "/cliente.html";
       return;
     }
 
-    alert("El número de celular o contraseña no son válidos.");
+    alert("El número de celular ingresado no figura registrado.");
   } catch (error) {
     console.error("Error detallado en login:", error);
-    alert("Hubo un inconveniente al conectar con el servidor: " + error.message);
+    if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      alert("Credenciales de administrador incorrectas.");
+    } else {
+      alert("Hubo un inconveniente al conectar con el servidor: " + error.message);
+    }
   } finally {
-    // 🟢 2. Reactivar el botón automáticamente si hubo error o credenciales incorrectas
     if (botonSubmit) {
       botonSubmit.disabled = false;
       botonSubmit.innerHTML = botonSubmit.dataset.textoOriginal || 'Ingresar';

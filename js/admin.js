@@ -2,7 +2,8 @@ import {
   doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, serverTimestamp,
   query, where, limit, increment, runTransaction
 } from "firebase/firestore";
-import { db } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import Swal from "sweetalert2";
 
 // Configuración global de alertas con SweetAlert2
@@ -18,18 +19,32 @@ window.alert = function (mensaje) {
 const docConfigRef = doc(db, "configuracion", "agenda");
 
 // ==========================================================
-// CONTROL DE ACCESO Y SESIÓN ADMIN
+// CONTROL DE ACCESO Y SESIÓN ADMIN (FIREBASE AUTH)
 // ==========================================================
-const esAdmin = localStorage.getItem('esAdmin') === 'true' || localStorage.getItem('adminLogueado') === 'true';
-if (!esAdmin) {
-  alert("Acceso denegado. Debes ingresar como Administrador.");
-  window.location.href = "/index.html";
-}
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    Swal.fire({
+      icon: "warning",
+      title: "Acceso denegado",
+      text: "Debes iniciar sesión formalmente como Administrador.",
+      confirmButtonColor: "#16a34a"
+    }).then(() => {
+      window.location.href = "/index.html";
+    });
+  } else {
+    // Si la sesión es válida, carga todos los módulos del panel
+    inicializarPanelAdmin();
+  }
+});
 
-window.cerrarSesionAdmin = function () {
-  localStorage.removeItem('esAdmin');
-  localStorage.removeItem('adminLogueado');
-  window.location.href = "/index.html";
+window.cerrarSesionAdmin = async function () {
+  try {
+    await signOut(auth);
+    window.location.href = "/index.html";
+  } catch (error) {
+    console.error("Error al cerrar sesión:", error);
+    window.location.href = "/index.html";
+  }
 };
 
 // Variables globales para cachear datos de uso frecuente
@@ -2171,9 +2186,9 @@ async function descargarStoryGlobal() {
 }
 
 // ==========================================================
-// 13. INICIALIZACIÓN UNIFICADA DE PÁGINA
+// 13. INICIALIZACIÓN UNIFICADA DE PÁGINA TRAS AUTENTICARSE
 // ==========================================================
-window.addEventListener('DOMContentLoaded', async () => {
+async function inicializarPanelAdmin() {
   cargarConfiguracionHorarioAdmin();
   renderizarListaZonas();
   cargarSelectsDeZonas();
@@ -2183,7 +2198,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   cargarPedidosAdmin();
   renderizarListaCompletaClientes();
   cargarEstadoCuentas();
+}
 
+window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnDescargarCSV')?.addEventListener('click', window.descargarHojaDeRutaCSV);
   document.getElementById('btnDescargarClientesCSV')?.addEventListener('click', window.descargarClientesCSV);
   document.getElementById('btnDescargarSaldosCSV')?.addEventListener('click', window.descargarSaldosPendientesCSV);
