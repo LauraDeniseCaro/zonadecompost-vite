@@ -50,7 +50,7 @@ window.cerrarSesionAdmin = async function () {
 // Variables globales para cachear datos de uso frecuente
 let ultimosClientes = [];
 let datosEstadoCuentas = [];
-let filtroEstadoCuentas = 'todos';
+let filtroEstadoCuentas = 'pendientes';
 
 // Función para convertir texto a Formato Título ("juan perez" -> "Juan Perez")
 function capitalizarTexto(texto) {
@@ -2197,7 +2197,7 @@ async function inicializarPanelAdmin() {
   cargarTurnosAdmin();
   cargarPedidosAdmin();
   renderizarListaCompletaClientes();
-  cargarEstadoCuentas();
+  //cargarEstadoCuentas();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -2220,4 +2220,17 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnCargarMasClientes')?.addEventListener('click', () => {
     renderizarListaCompletaClientes(true);
   });
+
+  // 🟢 ACÁ AGREGÁS LA CARGA BAJO DEMANDA (Lazy Loading):
+  let estadoCuentasYaCargado = false;
+  const botonAcordeonCuentas = document.querySelector('button[onclick*="acc-cuentas"]');
+
+  if (botonAcordeonCuentas) {
+    botonAcordeonCuentas.addEventListener("click", () => {
+      if (!estadoCuentasYaCargado) {
+        estadoCuentasYaCargado = true;
+        cargarEstadoCuentas();
+      }
+    });
+  }
 });
