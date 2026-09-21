@@ -40,6 +40,41 @@ function normalizarFecha(f) {
   return f;
 }
 
+// 🟢 Helper para calcular días sin que dé NaN
+function calcularDiasCompostando(fechaStr) {
+  if (!fechaStr || fechaStr === "Sin registrar") return 0;
+
+  let fechaInicio = null;
+  const texto = String(fechaStr).trim();
+
+  if (texto.includes('/')) {
+    // Formato M/D/YYYY o MM/DD/YYYY que viene de la base
+    const partes = texto.split('/');
+    if (partes.length === 3) {
+      const mes = parseInt(partes[0], 10) - 1;
+      const dia = parseInt(partes[1], 10);
+      const anio = parseInt(partes[2], 10);
+      fechaInicio = new Date(anio, mes, dia);
+    }
+  } else if (texto.includes('-')) {
+    // Formato YYYY-MM-DD
+    const partes = texto.split('-');
+    if (partes.length === 3) {
+      const anio = parseInt(partes[0], 10);
+      const mes = parseInt(partes[1], 10) - 1;
+      const dia = parseInt(partes[2], 10);
+      fechaInicio = new Date(anio, mes, dia);
+    }
+  }
+
+  if (fechaInicio && !isNaN(fechaInicio.getTime())) {
+    const hoy = new Date();
+    const diferenciaMs = hoy - fechaInicio;
+    return Math.max(0, Math.floor(diferenciaMs / (1000 * 60 * 60 * 24)));
+  }
+
+  return 0;
+}
 // 🟢 NUEVO HELPER: Evita errores por mayúsculas o espacios en nombres de zonas
 function claveZona(nombreZona) {
   return String(nombreZona || 'General').trim().toLowerCase();
@@ -158,13 +193,7 @@ function renderizarDatosCliente(c) {
     }
   }
 
-  let diasCompostando = 0;
-  if (c.fechaInicioServicio) {
-    const fechaIni = new Date(c.fechaInicioServicio + "T00:00:00");
-    const hoy = new Date();
-    diasCompostando = Math.max(0, Math.floor((hoy - fechaIni) / (1000 * 60 * 60 * 24)));
-  }
-
+  const diasCompostando = calcularDiasCompostando(c.fechaInicioServicio);
   const elDias = document.getElementById("clienteDiasCompostando");
   if (elDias) elDias.innerText = diasCompostando;
 
@@ -280,12 +309,7 @@ function configurarBotonCompartir() {
 
     const primerNombre = (clienteActual.nombre || "Vecino/a").trim().split(" ")[0];
 
-    let diasCompostando = 0;
-    if (clienteActual.fechaInicioServicio) {
-      const fechaIni = new Date(clienteActual.fechaInicioServicio + "T00:00:00");
-      const hoy = new Date();
-      diasCompostando = Math.max(0, Math.floor((hoy - fechaIni) / (1000 * 60 * 60 * 24)));
-    }
+    const diasCompostando = calcularDiasCompostando(clienteActual.fechaInicioServicio);
 
     const baldes = clienteActual.baldesCompostados ?? clienteActual.totalBaldes ?? 0;
     const kilos = Number(clienteActual.totalKilos || 0);

@@ -2011,10 +2011,35 @@ async function descargarStoryClienteSeleccionado() {
     const primerNombre = (c.nombre || "Vecino/a").trim().split(" ")[0];
 
     let diasCompostando = 0;
-    if (c.fechaInicioServicio) {
-      const fechaIni = new Date(c.fechaInicioServicio + "T00:00:00");
-      const hoy = new Date();
-      diasCompostando = Math.max(0, Math.floor((hoy - fechaIni) / (1000 * 60 * 60 * 24)));
+    if (c.fechaInicioServicio && c.fechaInicioServicio !== "Sin registrar") {
+      let fechaIni = null;
+      const strFecha = c.fechaInicioServicio.trim();
+
+      if (strFecha.includes('/')) {
+        // Viene como M/D/YYYY o MM/DD/YYYY
+        const partes = strFecha.split('/');
+        if (partes.length === 3) {
+          const mes = parseInt(partes[0], 10) - 1;
+          const dia = parseInt(partes[1], 10);
+          const anio = parseInt(partes[2], 10);
+          fechaIni = new Date(anio, mes, dia);
+        }
+      } else if (strFecha.includes('-')) {
+        // Viene como YYYY-MM-DD
+        const partes = strFecha.split('-');
+        if (partes.length === 3) {
+          const anio = parseInt(partes[0], 10);
+          const mes = parseInt(partes[1], 10) - 1;
+          const dia = parseInt(partes[2], 10);
+          fechaIni = new Date(anio, mes, dia);
+        }
+      }
+
+      if (fechaIni && !isNaN(fechaIni.getTime())) {
+        const hoy = new Date();
+        const diffMs = hoy - fechaIni;
+        diasCompostando = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+      }
     }
 
     let kilosMostrar = 0;
