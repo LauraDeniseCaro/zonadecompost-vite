@@ -75,7 +75,8 @@ function calcularDiasCompostando(fechaStr) {
 
   return 0;
 }
-// 🟢 NUEVO HELPER: Evita errores por mayúsculas o espacios en nombres de zonas
+
+// 🟢 Helper para normalizar nombres de zonas
 function claveZona(nombreZona) {
   return String(nombreZona || 'General').trim().toLowerCase();
 }
@@ -229,70 +230,74 @@ function formatearFechaRecoleccion(timestamp) {
 async function cargarInfoEconomicaCliente(cliente) {
   const precioEl = document.getElementById('clientePrecioBalde');
   const cajaPago = document.getElementById('cajaEstadoCuenta');
+  if (!cajaPago) return;
 
+  // 1. Tomar el saldo en memoria
+  const saldoGuardado = Number(cliente.saldoPendiente || 0);
+
+  // 2. Cargar precio de zona
+  let precioActual = 0;
   try {
     const zonasSnap = await getDocs(collection(db, 'zonas'));
     const mapaZonas = new Map();
-
-    // 🟢 CREAMOS UN MAPA LIMPIO DE ZONAS PARA EVITAR FALLOS
     zonasSnap.forEach(docSnap => {
       const z = docSnap.data();
       mapaZonas.set(claveZona(z.nombre), Number(z.precioBalde || 0));
     });
+    precioActual = mapaZonas.get(claveZona(cliente.zona)) || 0;
+  } catch (errZona) {
+    console.warn("No se pudieron cargar los precios de zonas:", errZona);
+  }
 
-    // 🟢 BUSCAMOS EL PRECIO USANDO LA CLAVE LIMPIA
-    const precioActual = mapaZonas.get(claveZona(cliente.zona)) || 0;
+  if (precioEl) {
+    precioEl.textContent = precioActual > 0 ? formatearMoneda(precioActual) : 'Sin configurar';
+  }
 
-    if (precioEl) {
-      precioEl.textContent = precioActual > 0 ? formatearMoneda(precioActual) : 'Sin configurar';
-    }
-
-    if (!cajaPago) return;
-
-    const qRecolecciones = query(collection(db, 'recolecciones'), where('clienteId', '==', cliente.id));
+  // 3. Buscar recolecciones pendientes si existen
+  let pendientes = [];
+  try {
+    const qRecolecciones = query(
+      collection(db, 'recolecciones'),
+      where('clienteId', '==', String(cliente.id))
+    );
     const recoleccionesSnap = await getDocs(qRecolecciones);
-    const pendientes = [];
-
     recoleccionesSnap.forEach(docSnap => {
       const r = { id: docSnap.id, ...docSnap.data() };
       if ((r.estadoPago || '').toLowerCase() === 'pendiente') pendientes.push(r);
     });
-
     pendientes.sort((a, b) => (b.fechaRetiro?.seconds || 0) - (a.fechaRetiro?.seconds || 0));
-    const saldo = Number(cliente.saldoPendiente || 0);
+  } catch (errRecolecciones) {
+    console.warn("Lectura de recolecciones omitida:", errRecolecciones);
+  }
 
-    if (saldo > 0 || pendientes.length > 0) {
-      let detalle = '';
-      if (pendientes.length > 0) {
-        detalle = `
-          <div class="detalle-deuda-cliente">
-            <strong class="titulo-deudas-cliente">Recolecciones pendientes</strong>
-            ${pendientes.map(r => `
-              <div class="item-deuda-cliente">
-                <span>${formatearFechaRecoleccion(r.fechaRetiro)} · ${Number(r.cantidadBaldes || 0)} balde${Number(r.cantidadBaldes || 0) === 1 ? '' : 's'}</span>
-                <strong>${formatearMoneda(r.total || 0)}</strong>
-              </div>
-            `).join('')}
-          </div>
-        `;
-      }
-
-      cajaPago.innerHTML = `
-        <p class="estado-pendiente-cliente"><i class="ri-error-warning-line icon"></i> Saldo pendiente: ${formatearMoneda(saldo)}</p>
-        <p class="estado-cuenta-subtexto">Valor actual en tu zona: <strong>${precioActual > 0 ? formatearMoneda(precioActual) + ' por balde' : 'sin configurar'}</strong></p>
-        ${detalle}
-        <button onclick="window.open('https://link.mercadopago.com.ar/tu-alias-aqui', '_blank')" class="btn-login-confirmar"><i class="ri-bank-card-line icon"></i> Pagar con Mercado Pago</button>
-      `;
-    } else {
-      cajaPago.innerHTML = `
-        <p class="estado-ok-cliente"><i class="ri-checkbox-circle-line icon"></i> Estado de cuenta: Al día</p>
-        <p class="estado-cuenta-subtexto estado-cuenta-subtexto--compacto">Valor actual por balde en tu zona: <strong>${precioActual > 0 ? formatearMoneda(precioActual) : 'Sin configurar'}</strong>.</p>
+  // 4. Mostrar estado de cuenta sin riesgo de error de sintaxis
+  if (saldoGuardado > 0 || pendientes.length > 0) {
+    let detalle = '';
+    if (pendientes.length > 0) {
+      detalle = `
+        <div class="detalle-deuda-cliente">
+          <strong class="titulo-deudas-cliente">Recolecciones pendientes</strong>
+          ${pendientes.map(r => `
+            <div class="item-deuda-cliente">
+              <span>${formatearFechaRecoleccion(r.fechaRetiro)} · ${Number(r.cantidadBaldes || 0)} balde${Number(r.cantidadBaldes || 0) === 1 ? '' : 's'}</span>
+              <strong>${formatearMoneda(r.total || 0)}</strong>
+            </div>
+          `).join('')}
+        </div>
       `;
     }
-  } catch (error) {
-    console.error('Error al cargar precio y estado de cuenta:', error);
-    if (precioEl) precioEl.textContent = 'No disponible';
-    if (cajaPago) cajaPago.innerHTML = '<p class="estado-cuenta-error">No se pudo cargar el estado de cuenta.</p>';
+
+    cajaPago.innerHTML = `
+      <p class="estado-pendiente-cliente"><i class="ri-error-warning-line icon"></i> Saldo pendiente: ${formatearMoneda(saldoGuardado)}</p>
+      <p class="estado-cuenta-subtexto">Valor actual en tu zona: <strong>${precioActual > 0 ? formatearMoneda(precioActual) + ' por balde' : 'Sin configurar'}</strong></p>
+      ${detalle}
+      <button onclick="window.open('https://link.mercadopago.com.ar/zonadecompost', '_blank')" class="btn-login-confirmar"><i class="ri-bank-card-line icon"></i> Pagar con Mercado Pago</button>
+    `;
+  } else {
+    cajaPago.innerHTML = `
+      <p class="estado-ok-cliente"><i class="ri-checkbox-circle-line icon"></i> Estado de cuenta: Al día</p>
+      <p class="estado-cuenta-subtexto estado-cuenta-subtexto--compacto">Valor actual por balde en tu zona: <strong>${precioActual > 0 ? formatearMoneda(precioActual) : 'Sin configurar'}</strong>.</p>
+    `;
   }
 }
 
@@ -308,18 +313,25 @@ function configurarBotonCompartir() {
     if (!storyElem || !clienteActual) return;
 
     const primerNombre = (clienteActual.nombre || "Vecino/a").trim().split(" ")[0];
-
     const diasCompostando = calcularDiasCompostando(clienteActual.fechaInicioServicio);
-
     const baldes = clienteActual.baldesCompostados ?? clienteActual.totalBaldes ?? 0;
     const kilos = Number(clienteActual.totalKilos || 0);
     const compost = (kilos / 3).toFixed(1);
 
-    document.getElementById('storyNombreCliente').innerText = primerNombre;
-    document.getElementById('storyDias').innerText = `${diasCompostando} días`;
-    document.getElementById('storyBaldes').innerText = `${baldes} baldes`;
-    document.getElementById('storyKilos').innerText = `${kilos.toFixed(1)} kg de orgánicos`;
-    document.getElementById('storyCompost').innerText = `${compost} kg de compost`;
+    const elStoryNombre = document.getElementById('storyNombreCliente');
+    if (elStoryNombre) elStoryNombre.innerText = primerNombre;
+
+    const elStoryDias = document.getElementById('storyDias');
+    if (elStoryDias) elStoryDias.innerText = `${diasCompostando} días`;
+
+    const elStoryBaldes = document.getElementById('storyBaldes');
+    if (elStoryBaldes) elStoryBaldes.innerText = `${baldes} baldes`;
+
+    const elStoryKilos = document.getElementById('storyKilos');
+    if (elStoryKilos) elStoryKilos.innerText = `${kilos.toFixed(1)} kg de orgánicos`;
+
+    const elStoryCompost = document.getElementById('storyCompost');
+    if (elStoryCompost) elStoryCompost.innerText = `${compost} kg de compost`;
 
     try {
       btnCompartir.disabled = true;
@@ -339,7 +351,7 @@ function configurarBotonCompartir() {
           await navigator.share({
             files: [file],
             title: 'Mi Impacto en Zona de Compost',
-            text: 'Estoy compostando con zona de compost y les comparto mi impacto en'
+            text: 'Estoy compostando con zona de compost y les comparto mi impacto en números'
           });
         } else {
           const enlace = document.createElement('a');
