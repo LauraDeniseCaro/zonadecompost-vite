@@ -285,7 +285,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  padding: 100px 70px 0 70px;
+  padding: 110px 70px 0 70px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -294,27 +294,24 @@
 }
 
 .story-agradecimiento {
-  font-size: 54px;
+  font-size: 68px;
   font-weight: 900;
   letter-spacing: 2px;
   line-height: 1.15;
-  margin: 0;
+  margin: 0 0 20px 0;
   color: #070d2d;
 }
 
-.story-saludo {
-  font-size: 48px;
-  font-weight: 800;
-  color: #070d2d;
-  margin: 30px 0 10px 0;
+/* 🟢 Texto que antes no tenía estilo y salía diminuto */
+.story-desc-compost {
+  font-size: 32px;
+  line-height: 1.4;
+  color: #1e293b;
+  margin: 0 0 30px 0;
 }
 
-.story-subtitulo-impacto {
-  font-size: 38px;
-  font-weight: 700;
+.story-desc-compost strong {
   color: #070d2d;
-  line-height: 1.25;
-  margin: 0;
 }
 
 /* Grilla 2x2 de tarjetas azul marino profundo */
@@ -337,23 +334,26 @@
 }
 
 .story-navy-icon {
-  font-size: 80px;
+  font-size: 72px;
   color: #ffffff;
   margin-bottom: 16px;
 }
 
+/* 🟢 Números destacados ampliados para resolución de 1080px */
 .story-navy-card strong {
-  font-size: 34px;
+  font-size: 52px;
   font-weight: 800;
   color: #ffffff;
   line-height: 1.2;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .story-navy-card span {
-  font-size: 24px;
+  font-size: 26px;
   color: #cbd5e1;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 /* Footer con Marca */

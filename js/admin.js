@@ -1,6 +1,6 @@
 import {
   doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, serverTimestamp,
-  query, where, limit, increment, runTransaction
+  query, where, limit, increment, runTransaction, orderBy
 } from "firebase/firestore";
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -1986,6 +1986,67 @@ window.descargarSaldosPendientesCSV = async function () {
 };
 
 // ==========================================================
+// DESCARGA DE HISTORIAL DE RETIROS DE BALDES (CSV)
+// ==========================================================
+window.descargarHistorialBaldesCSV = async function () {
+  const btn = document.getElementById('btnDescargarHistorialBaldesCSV');
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ri-loader-4-line"></i> Descargando...';
+    }
+
+    const qRecolecciones = query(
+      collection(db, "recolecciones"),
+      orderBy("fechaRetiro", "desc")
+    );
+    const snap = await getDocs(qRecolecciones);
+
+    if (snap.empty) {
+      Swal.fire('Sin movimientos', 'Todavía no hay retiros de baldes registrados en el sistema.', 'info');
+      return;
+    }
+
+    let csvContent = '\uFEFF'; // Permite que Excel reconozca tildes y caracteres en español
+    csvContent += 'Fecha Retiro;Cliente;ID / Celular;Zona;Baldes Retirados;Precio Unitario ($);Total ($);Estado del Pago;Turno;Nota Entrega\r\n';
+
+    snap.forEach((docSnap) => {
+      const r = docSnap.data();
+      const fecha = escaparCSV(formatearFechaTimestamp(r.fechaRetiro));
+      const cliente = escaparCSV(r.clienteNombre || 'Sin nombre');
+      const celu = escaparCSV(r.clienteId || '');
+      const zona = escaparCSV(r.zona || 'General');
+      const baldes = Number(r.cantidadBaldes || 1);
+      const precio = Number(r.precioUnitario || 0);
+      const total = Number(r.total || 0);
+      const estado = escaparCSV(r.estadoPago || 'pendiente');
+      const turno = escaparCSV(r.turno || '');
+      const nota = escaparCSV(r.notaEntrega || '');
+
+      csvContent += `"${fecha}";"${cliente}";"${celu}";"${zona}";"${baldes}";"${precio}";"${total}";"${estado}";"${turno}";"${nota}"\r\n`;
+    });
+
+    descargarArchivoCSV(csvContent, `historial_retiro_baldes_${new Date().toISOString().slice(0, 10)}.csv`);
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Historial descargado!',
+      text: 'Se generó la planilla con el registro histórico de retiros.',
+      confirmButtonColor: '#16a34a'
+    });
+
+  } catch (error) {
+    console.error('Error al exportar historial de baldes:', error);
+    Swal.fire('Error', 'No se pudo descargar el archivo de historial.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ri-history-line"></i> Descargar Historial Baldes (CSV)';
+    }
+  }
+};
+
+// ==========================================================
 // 11. GENERADOR DE STORY DE IMPACTO INDIVIDUAL (ADMIN)
 // ==========================================================
 async function descargarStoryClienteSeleccionado() {
@@ -2229,6 +2290,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnDescargarCSV')?.addEventListener('click', window.descargarHojaDeRutaCSV);
   document.getElementById('btnDescargarClientesCSV')?.addEventListener('click', window.descargarClientesCSV);
   document.getElementById('btnDescargarSaldosCSV')?.addEventListener('click', window.descargarSaldosPendientesCSV);
+  document.getElementById('btnDescargarHistorialBaldesCSV')?.addEventListener('click', window.descargarHistorialBaldesCSV);
   document.getElementById('btnDescargarStoryAdmin')?.addEventListener('click', descargarStoryClienteSeleccionado);
   document.getElementById('btnDescargarStoryGlobal')?.addEventListener('click', descargarStoryGlobal);
 
@@ -2256,6 +2318,6 @@ window.addEventListener('DOMContentLoaded', () => {
         estadoCuentasYaCargado = true;
         cargarEstadoCuentas();
       }
-    });
+    });  
   }
 });

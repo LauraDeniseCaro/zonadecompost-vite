@@ -30,6 +30,28 @@ let clienteActual = null;
 let turnoSeleccionado = null;
 let horaLimiteGlobal = "19:00";
 
+function formatearFechaDDMMAAAA(fechaStr) {
+  if (!fechaStr || fechaStr === "Sin registrar") return "Sin registrar";
+  const str = String(fechaStr).trim();
+
+  // Si viene en formato YYYY-MM-DD
+  if (str.includes('-')) {
+    const p = str.split('-');
+    if (p.length === 3) return `${p[2].padStart(2, '0')}/${p[1].padStart(2, '0')}/${p[0]}`;
+  }
+
+  // Si viene con barras M/D/YYYY o MM/DD/YYYY
+  if (str.includes('/')) {
+    const p = str.split('/');
+    if (p.length === 3) {
+      if (p[0].length === 4) return `${p[2].padStart(2, '0')}/${p[1].padStart(2, '0')}/${p[0]}`; // YYYY/MM/DD
+      if (p[2].length === 4) return `${p[1].padStart(2, '0')}/${p[0].padStart(2, '0')}/${p[2]}`; // MM/DD/YYYY -> DD/MM/AAAA
+    }
+  }
+
+  return str;
+}
+
 // Funciones Helper de limpieza
 function normalizarFecha(f) {
   if (!f) return '';
@@ -80,6 +102,36 @@ function calcularDiasCompostando(fechaStr) {
 function claveZona(nombreZona) {
   return String(nombreZona || 'General').trim().toLowerCase();
 }
+
+// ==========================================================
+// PAGO: COPIAR ALIAS Y NOTIFICAR POR WHATSAPP
+// ==========================================================
+window.copiarAliasBancario = function (alias) {
+  navigator.clipboard.writeText(alias).then(() => {
+    const btn = document.getElementById('btnCopiarAlias');
+    if (btn) {
+      const textoOriginal = btn.innerHTML;
+      btn.innerHTML = '<i class="ri-check-line icon"></i> ¡Copiado!';
+      btn.style.backgroundColor = '#15803d';
+      btn.style.color = '#ffffff';
+      setTimeout(() => {
+        btn.innerHTML = textoOriginal;
+        btn.style.backgroundColor = '';
+        btn.style.color = '';
+      }, 2000);
+    }
+  }).catch(err => {
+    console.error('Error al copiar el alias:', err);
+  });
+};
+
+window.notificarPagoWhatsapp = function (monto) {
+  const nombre = (clienteActual?.nombre || 'Cliente').trim();
+  const mensaje = encodeURIComponent(
+    `¡Hola Eze! 👋 Ya transferí $${monto} correspondiente al servicio de compostaje (${nombre}). Te adjunto el comprobante:`
+  );
+  window.open(`https://wa.me/5492944517496?text=${mensaje}`, '_blank');
+};
 
 // ==========================================================
 // 1. LÓGICA DE HORA LÍMITE GLOBAL Y VALIDACIÓN
@@ -186,12 +238,7 @@ function renderizarDatosCliente(c) {
 
   const elFechaInicio = document.getElementById("clienteFechaInicio");
   if (elFechaInicio && c.fechaInicioServicio) {
-    const partes = c.fechaInicioServicio.split('-');
-    if (partes.length === 3) {
-      elFechaInicio.innerText = `Miembro desde: ${partes[2]}/${partes[1]}/${partes[0]}`;
-    } else {
-      elFechaInicio.innerText = `Miembro desde: ${c.fechaInicioServicio}`;
-    }
+    elFechaInicio.innerText = `Miembro desde: ${formatearFechaDDMMAAAA(c.fechaInicioServicio)}`;
   }
 
   const diasCompostando = calcularDiasCompostando(c.fechaInicioServicio);
@@ -287,11 +334,32 @@ async function cargarInfoEconomicaCliente(cliente) {
       `;
     }
 
+    // Datos bancarios de Ezequiel
+    const ALIAS_BANCO = "zonadecompost"; // Reemplazá por el alias real
+    const TITULAR_BANCO = "Ezequiel";
+
     cajaPago.innerHTML = `
       <p class="estado-pendiente-cliente"><i class="ri-error-warning-line icon"></i> Saldo pendiente: ${formatearMoneda(saldoGuardado)}</p>
       <p class="estado-cuenta-subtexto">Valor actual en tu zona: <strong>${precioActual > 0 ? formatearMoneda(precioActual) + ' por balde' : 'Sin configurar'}</strong></p>
       ${detalle}
-      <button onclick="window.open('https://link.mercadopago.com.ar/zonadecompost', '_blank')" class="btn-login-confirmar"><i class="ri-bank-card-line icon"></i> Pagar con Mercado Pago</button>
+      
+      <div class="caja-transferencia-bancaria" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:16px; margin-top:14px; text-align:left;">
+        <span style="font-size:0.85rem; color:#64748b; font-weight:600; text-transform:uppercase;">Transferencia Bancaria</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:10px 14px; border-radius:8px; border:1px solid #e2e8f0; margin-top:8px;">
+          <div>
+            <div style="font-size:0.75rem; color:#94a3b8;">Alias de la cuenta</div>
+            <strong style="font-size:1.05rem; color:#0f172a; font-family:monospace; letter-spacing:0.5px;">${ALIAS_BANCO}</strong>
+            <div style="font-size:0.75rem; color:#64748b;">Titular: ${TITULAR_BANCO}</div>
+          </div>
+          <button type="button" id="btnCopiarAlias" onclick="copiarAliasBancario('${ALIAS_BANCO}')" class="btn-app" style="padding:8px 14px; font-size:0.85rem; cursor:pointer; border-radius:6px;">
+            <i class="ri-file-copy-line icon"></i> Copiar
+          </button>
+        </div>
+
+        <button type="button" onclick="notificarPagoWhatsapp(${saldoGuardado})" class="btn-login-confirmar" style="margin-top:12px; width:100%; display:flex; justify-content:center; align-items:center; gap:8px;">
+          <i class="ri-whatsapp-line icon"></i> Enviar comprobante por WhatsApp
+        </button>
+      </div>
     `;
   } else {
     cajaPago.innerHTML = `
