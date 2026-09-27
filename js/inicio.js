@@ -303,9 +303,30 @@ function irASlide(carruselId, nuevoIndex) {
 // ==========================================================
 // E. INICIALIZACIÓN AL CARGAR LA PÁGINA
 // ==========================================================
+
+function inicializarBannerInstalacion() {
+  const banner = document.getElementById("pwa-install-banner");
+  const closeBtn = document.getElementById("close-install-banner");
+
+  if (!banner) return;
+
+  const isBannerDismissed = localStorage.getItem("installBannerDismissed");
+  if (!isBannerDismissed) {
+    banner.style.display = "flex";
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      banner.style.display = "none";
+      localStorage.setItem("installBannerDismissed", "true");
+    });
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   cargarImpactoGlobal();
   inicializarCarruseles();
+  inicializarBannerInstalacion(); // <-- Se inicializa acá
 
   const formLogin = document.getElementById("formLogin");
   if (formLogin) {
