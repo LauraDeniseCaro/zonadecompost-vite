@@ -1,5 +1,5 @@
 import {
-  doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, serverTimestamp,
+  doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp,
   query, where, limit, increment, runTransaction, orderBy
 } from "firebase/firestore";
 import { auth, db } from "./firebase-config.js";
@@ -810,6 +810,11 @@ function seleccionarCliente(cliente) {
       ? ` / 2do: ${cliente.celularesAsociados[1]}`
       : '';
 
+    // 1. Calculamos el texto del promedio para mostrar
+    const promedio = cliente.promedioDiasLlenado
+      ? `${Math.round(cliente.promedioDiasLlenado)} días`
+      : 'Sin datos suficientes';
+
     textoSeleccionado.innerHTML = `
       <div class="cliente-admin-resumen-dinamico">
         <h3 class="cliente-admin-titulo">
@@ -831,6 +836,8 @@ function seleccionarCliente(cliente) {
           <span><i class="ri-scales-3-line icono-menta"></i> Kilos: <strong>${Number(cliente.totalKilos || 0).toFixed(1)} kg</strong></span>
           <span><i class="ri-delete-bin-6-line icono-naranja"></i> Baldes: <strong>${cliente.baldesCompostados || 0}</strong></span>
           <span><i class="ri-money-dollar-box-line icono-verde"></i> Saldo: <strong class="${cliente.saldoPendiente > 0 ? 'saldo-dinamico-pendiente' : 'saldo-dinamico-ok'}">$${cliente.saldoPendiente || 0}</strong></span>
+          <!-- 2. Métrica del promedio agregada acá -->
+          <span><i class="ri-timer-line icono-violeta"></i> Promedio de llenado: <strong>${promedio}</strong></span>
         </div>
       </div>
     `;
@@ -852,10 +859,17 @@ function seleccionarCliente(cliente) {
     : '';
   if (inputCeluSecundario) inputCeluSecundario.value = secundario;
 
+  // Reseteo de inputs operativos
   const inputKilosASumar = document.getElementById('kilosASumarInput');
   const inputBaldesASumar = document.getElementById('baldesASumarInput');
   if (inputKilosASumar) inputKilosASumar.value = '0';
   if (inputBaldesASumar) inputBaldesASumar.value = '0';
+
+  // 3. Autocompletar la fecha de retiro con la fecha de hoy por defecto
+  const inputFechaRetiro = document.getElementById('fechaRetiroManualInput');
+  if (inputFechaRetiro) {
+    inputFechaRetiro.value = new Date().toISOString().split('T')[0];
+  }
 
   const formEdicion = document.getElementById('formEditarPerfilCliente');
   const cajaCliente = document.getElementById('cajaClienteSeleccionadoAdmin');
@@ -1109,7 +1123,7 @@ if (btnEliminar) {
 }
 
 // ==========================================================
-// 6. ACCIONES RÁPIDAS (KILOS / BALDES) + HISTORIAL ANUAL
+// 6. CARGA MANUAL DE RETIROS (CON CÁLCULO DE PROMEDIO)
 // ==========================================================
 const btnSumarKilosYBaldes = document.getElementById('btnSumarKilosYBaldes');
 if (btnSumarKilosYBaldes) {
@@ -1117,6 +1131,8 @@ if (btnSumarKilosYBaldes) {
     const clienteId = document.getElementById('clienteSeleccionadoId')?.value;
     const kilosNuevos = parseFloat(document.getElementById('kilosASumarInput')?.value) || 0;
     const baldesNuevos = parseInt(document.getElementById('baldesASumarInput')?.value) || 0;
+    const fechaInput = document.getElementById('fechaRetiroManualInput')?.value;
+    const estadoPago = document.getElementById('estadoPagoManualInput')?.value || 'pagado';
 
     if (!clienteId) {
       Swal.fire('Atención', 'Primero seleccioná un cliente.', 'warning');
@@ -1124,28 +1140,97 @@ if (btnSumarKilosYBaldes) {
     }
 
     if (kilosNuevos <= 0 && baldesNuevos <= 0) {
-      Swal.fire('Atención', 'Ingresá cantidad de kilos o baldes para sumar.', 'warning');
+      Swal.fire('Atención', 'Ingresá al menos una cantidad de kilos o baldes.', 'warning');
+      return;
+    }
+
+    if (baldesNuevos > 0 && !fechaInput) {
+      Swal.fire('Atención', 'Por favor seleccioná la fecha del retiro del balde.', 'warning');
       return;
     }
 
     try {
       const userRef = doc(db, "usuarios", clienteId);
-      const payload = {};
-      if (kilosNuevos > 0) payload.totalKilos = increment(kilosNuevos);
-      if (baldesNuevos > 0) payload.baldesCompostados = increment(baldesNuevos);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) return;
+      const dataCliente = userSnap.data();
 
-      const añoActual = new Date().getFullYear().toString();
+      // Buscamos el precio de la zona del cliente
+      const mapaPrecios = await obtenerMapaPreciosZonas();
+      const precioBalde = Number(mapaPrecios.get(claveZona(dataCliente.zona)) || 0);
+      const totalPesos = baldesNuevos * precioBalde;
+
+      // 1. CÁLCULO DEL PROMEDIO DE DÍAS (solo si se retira balde)
+      let nuevoPromedio = dataCliente.promedioDiasLlenado || 0;
+      let fechaNuevaObj = null;
+
+      if (fechaInput) {
+        fechaNuevaObj = new Date(fechaInput + "T12:00:00");
+        if (dataCliente.fechaUltimoRetiro && typeof dataCliente.fechaUltimoRetiro.toDate === 'function') {
+          const fechaUltimaObj = dataCliente.fechaUltimoRetiro.toDate();
+          const diffMs = Math.abs(fechaNuevaObj - fechaUltimaObj);
+          // Diferencia en días redondeada
+          const diasPasados = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+          nuevoPromedio = nuevoPromedio > 0 ? (nuevoPromedio + diasPasados) / 2 : diasPasados;
+        }
+      }
+
+      // 2. GUARDADO EN BASE DE DATOS
+      await runTransaction(db, async (transaction) => {
+        // Si hay baldes retirados, generamos el registro formal de recolección
+        if (baldesNuevos > 0) {
+          const recoleccionRef = doc(collection(db, 'recolecciones'));
+          transaction.set(recoleccionRef, {
+            clienteId: clienteId,
+            clienteNombre: dataCliente.nombre || 'Cliente Manual',
+            zona: dataCliente.zona || 'General',
+            cantidadBaldes: baldesNuevos,
+            kilos: kilosNuevos, // 👈 AGREGAR ESTA LÍNEA
+            precioUnitario: precioBalde,
+            total: totalPesos,
+            estadoPago: estadoPago,
+            turno: 'Carga Manual Admin',
+            fechaRetiro: Timestamp.fromDate(fechaNuevaObj),
+            fechaPago: estadoPago === 'pagado' ? Timestamp.fromDate(fechaNuevaObj) : null,
+            creadoEn: serverTimestamp()
+          });
+        }
+
+        // Actualizamos el perfil del cliente (kilos, baldes, saldos y promedios)
+        const payloadUsuario = {};
+        if (kilosNuevos > 0) payloadUsuario.totalKilos = increment(kilosNuevos);
+        if (baldesNuevos > 0) {
+          payloadUsuario.baldesCompostados = increment(baldesNuevos);
+          payloadUsuario.fechaUltimoRetiro = Timestamp.fromDate(fechaNuevaObj);
+          if (nuevoPromedio > 0) payloadUsuario.promedioDiasLlenado = nuevoPromedio;
+
+          if (estadoPago === 'pendiente') {
+            payloadUsuario.saldoPendiente = Number(dataCliente.saldoPendiente || 0) + totalPesos;
+          }
+        }
+
+        transaction.update(userRef, payloadUsuario);
+      });
+
+      // Historial anual para las métricas e impacto ambiental (Stories)
+      const anioActual = new Date().getFullYear().toString();
       await addDoc(collection(db, "historial_impacto"), {
         clienteId: clienteId,
         kilos: kilosNuevos,
         baldes: baldesNuevos,
-        anio: añoActual,
+        anio: anioActual,
         fecha: serverTimestamp()
       });
 
-      await updateDoc(userRef, payload);
+      Swal.fire({
+        icon: 'success',
+        title: '¡Registrado con éxito!',
+        text: baldesNuevos > 0 ? `Retiro registrado (${estadoPago === 'pendiente' ? 'con saldo pendiente' : 'pagado'}).` : 'Kilos sumados correctamente.',
+        confirmButtonColor: '#16a34a'
+      });
 
-      Swal.fire('¡Registrado!', 'Los kilos y baldes se sumaron correctamente.', 'success');
+      // Limpiamos los inputs operativos
       document.getElementById('kilosASumarInput').value = '0';
       document.getElementById('baldesASumarInput').value = '0';
 
@@ -1153,9 +1238,10 @@ if (btnSumarKilosYBaldes) {
       await cargarClientesIniciales();
       renderizarListaCompletaClientes();
       cargarEstadoCuentas();
+
     } catch (error) {
-      console.error("Error al sumar kilos/baldes:", error);
-      Swal.fire('Error', 'No se pudo actualizar los kilos/baldes.', 'error');
+      console.error("Error al registrar retiro manual:", error);
+      Swal.fire('Error', 'No se pudo guardar el registro.', 'error');
     }
   });
 }
@@ -1892,6 +1978,9 @@ window.abrirDetalleCuentaCliente = async function (clienteId) {
 // ==========================================================
 // 10. EXPORTACIONES CSV COMPLETAS
 // ==========================================================
+// ==========================================================
+// EXPORTACIÓN DE CLIENTES A CSV (CON PROMEDIO DE LLENADO)
+// ==========================================================
 window.descargarClientesCSV = async function () {
   try {
     const [usuariosSnap, preciosPorZona] = await Promise.all([
@@ -1912,7 +2001,8 @@ window.descargarClientesCSV = async function () {
     clientes.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
     let csvContent = '\uFEFF';
-    csvContent += 'Nombre;ID / Celular Principal;Celular Secundario;Zona;Precio por balde ($);Dirección;Fecha Inicio Servicio;Kilos Acumulados;Baldes Compostados;Saldo Pendiente ($);Estado de cuenta\r\n';
+    // 1. Agregamos la columna al encabezado del archivo
+    csvContent += 'Nombre;ID / Celular Principal;Celular Secundario;Zona;Precio por balde ($);Dirección;Fecha Inicio Servicio;Kilos Acumulados;Baldes Compostados;Saldo Pendiente ($);Estado de cuenta;Promedio días llenado\r\n';
 
     clientes.forEach(c => {
       const secundario = (c.celularesAsociados && c.celularesAsociados.length > 1) ? c.celularesAsociados[1] : '';
@@ -1920,7 +2010,13 @@ window.descargarClientesCSV = async function () {
       const precioBalde = Number(preciosPorZona.get(claveZona(c.zona)) || 0);
       const estadoCuenta = saldo > 0 ? 'Pendiente' : 'Al día';
 
-      csvContent += `"${escaparCSV(c.nombre || 'Sin nombre')}";"${escaparCSV(c.id)}";"${escaparCSV(secundario)}";"${escaparCSV(c.zona || 'General')}";"${precioBalde}";"${escaparCSV(c.direccion || 'Sin especificar')}";"${escaparCSV(formatearFechaVista(c.fechaInicioServicio))}";"${Number(c.totalKilos || 0).toFixed(1)}";"${Number(c.baldesCompostados || 0)}";"${saldo}";"${estadoCuenta}"\r\n`;
+      // 2. Leemos el promedio guardado en el cliente (si no tiene, pone "Sin datos")
+      const promedioTexto = c.promedioDiasLlenado
+        ? `${Math.round(c.promedioDiasLlenado)} días`
+        : 'Sin datos';
+
+      // 3. Añadimos el dato al final de la fila
+      csvContent += `"${escaparCSV(c.nombre || 'Sin nombre')}";"${escaparCSV(c.id)}";"${escaparCSV(secundario)}";"${escaparCSV(c.zona || 'General')}";"${precioBalde}";"${escaparCSV(c.direccion || 'Sin especificar')}";"${escaparCSV(formatearFechaVista(c.fechaInicioServicio))}";"${Number(c.totalKilos || 0).toFixed(1)}";"${Number(c.baldesCompostados || 0)}";"${saldo}";"${estadoCuenta}";"${escaparCSV(promedioTexto)}"\r\n`;
     });
 
     descargarArchivoCSV(csvContent, `clientes_registrados_${new Date().toISOString().slice(0, 10)}.csv`);
@@ -1986,7 +2082,7 @@ window.descargarSaldosPendientesCSV = async function () {
 };
 
 // ==========================================================
-// DESCARGA DE HISTORIAL DE RETIROS DE BALDES (CSV)
+// DESCARGA DE HISTORIAL DE RETIROS DE BALDES (CSV) CON KILOS
 // ==========================================================
 window.descargarHistorialBaldesCSV = async function () {
   const btn = document.getElementById('btnDescargarHistorialBaldesCSV');
@@ -2007,8 +2103,9 @@ window.descargarHistorialBaldesCSV = async function () {
       return;
     }
 
-    let csvContent = '\uFEFF'; // Permite que Excel reconozca tildes y caracteres en español
-    csvContent += 'Fecha Retiro;Cliente;ID / Celular;Zona;Baldes Retirados;Precio Unitario ($);Total ($);Estado del Pago;Turno;Nota Entrega\r\n';
+    let csvContent = '\uFEFF'; 
+    // 👇 Agregamos la columna "Kilos" en el encabezado
+    csvContent += 'Fecha Retiro;Cliente;ID / Celular;Zona;Baldes Retirados;Kilos;Precio Unitario ($);Total ($);Estado del Pago;Turno;Nota Entrega\r\n';
 
     snap.forEach((docSnap) => {
       const r = docSnap.data();
@@ -2017,13 +2114,17 @@ window.descargarHistorialBaldesCSV = async function () {
       const celu = escaparCSV(r.clienteId || '');
       const zona = escaparCSV(r.zona || 'General');
       const baldes = Number(r.cantidadBaldes || 1);
+      const kilos = Number(r.kilos || 0); // 👈 Leemos los kilos registrados
       const precio = Number(r.precioUnitario || 0);
       const total = Number(r.total || 0);
       const estado = escaparCSV(r.estadoPago || 'pendiente');
       const turno = escaparCSV(r.turno || '');
       const nota = escaparCSV(r.notaEntrega || '');
 
-      csvContent += `"${fecha}";"${cliente}";"${celu}";"${zona}";"${baldes}";"${precio}";"${total}";"${estado}";"${turno}";"${nota}"\r\n`;
+      // Formateamos los kilos (si no se pesó, muestra 'Sin pesar')
+      const kilosTexto = kilos > 0 ? `${kilos.toFixed(1)} kg` : 'Sin pesar';
+
+      csvContent += `"${fecha}";"${cliente}";"${celu}";"${zona}";"${baldes}";"${kilosTexto}";"${precio}";"${total}";"${estado}";"${turno}";"${nota}"\r\n`;
     });
 
     descargarArchivoCSV(csvContent, `historial_retiro_baldes_${new Date().toISOString().slice(0, 10)}.csv`);
@@ -2031,7 +2132,7 @@ window.descargarHistorialBaldesCSV = async function () {
     Swal.fire({
       icon: 'success',
       title: '¡Historial descargado!',
-      text: 'Se generó la planilla con el registro histórico de retiros.',
+      text: 'Se generó la planilla con el registro histórico de retiros y kilos.',
       confirmButtonColor: '#16a34a'
     });
 
@@ -2318,6 +2419,6 @@ window.addEventListener('DOMContentLoaded', () => {
         estadoCuentasYaCargado = true;
         cargarEstadoCuentas();
       }
-    });  
+    });
   }
 });

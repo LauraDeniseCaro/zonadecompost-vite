@@ -590,3 +590,48 @@
     break-inside: avoid;
   }
 }
+/* ==========================================================
+   ALINEACIÓN BARRA DE ACCIONES CLIENTES (CSV / STORIES)
+   ========================================================== */
+.admin-barra-acciones-clientes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.admin-barra-acciones-clientes .btn-app {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.grupo-story-global {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.select-app-mini {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #fff;
+  font-size: 0.88rem;
+}
+
+.btn-exportar-csv { background-color: #16a34a; color: #fff; }
+.btn-historial-csv { background-color: #6366f1; color: #fff; }
+.btn-story-global { background-color: #7c3aed; color: #fff; }
+.btn-actualizar-tabla { background-color: #c084fc; color: #3b0764; }

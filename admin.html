@@ -139,8 +139,10 @@
           </div>
 
           <div class="admin-panel-operativo">
-            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-recycle-line"></i> Carga manual de Kilos y
-              Baldes</h4>
+            <h4 class="admin-subtitulo admin-subtitulo--oscuro">
+              <i class="ri-recycle-line"></i> Carga manual de Kilos y Baldes
+            </h4>
+
             <div class="admin-grid-2">
               <div class="form-group">
                 <label for="kilosASumarInput">Kilos A Sumar:</label>
@@ -151,14 +153,34 @@
                 <input type="number" step="1" id="baldesASumarInput" class="form-control" value="0">
               </div>
             </div>
-            <button type="button" id="btnSumarKilosYBaldes" class="btn-app btn-app-accion admin-btn-ancho-completo">
-              <i class="ri-add-circle-line"></i> Sumar Kilos y Baldes
+
+            <!-- 👇 CAMPOS NUEVOS EN GRID DE 2 COLUMNAS CON TUS CLASES 👇 -->
+            <div class="admin-grid-2" style="margin-top: 10px;">
+              <div class="form-group">
+                <label for="fechaRetiroManualInput">Fecha exacta del retiro:</label>
+                <input type="date" id="fechaRetiroManualInput" class="form-control">
+              </div>
+
+              <div class="form-group">
+                <label for="estadoPagoManualInput">Estado del pago:</label>
+                <select id="estadoPagoManualInput" class="form-control">
+                  <option value="pagado">✅ Pagado en el momento</option>
+                  <option value="pendiente">⏳ Pendiente de Pago (Anotar en cuenta)</option>
+                </select>
+              </div>
+            </div>
+            <!-- 👆 FIN DE CAMPOS NUEVOS 👆 -->
+
+            <button type="button" id="btnSumarKilosYBaldes" class="btn-app btn-app-accion admin-btn-ancho-completo"
+              style="margin-top: 15px;">
+              <i class="ri-add-circle-line"></i> Registrar Retiro Manual
             </button>
 
             <hr class="admin-separador">
 
-            <h4 class="admin-subtitulo admin-subtitulo--oscuro"><i class="ri-money-dollar-circle-line"></i>
-              Recolecciones Pendientes de Pago</h4>
+            <h4 class="admin-subtitulo admin-subtitulo--oscuro">
+              <i class="ri-money-dollar-circle-line"></i> Recolecciones Pendientes de Pago
+            </h4>
             <div id="contenedorDeudasClienteAdmin">
               <p class="texto-suave">Seleccioná un cliente para ver su estado de cuenta.</p>
             </div>
@@ -313,31 +335,33 @@
         <div class="admin-clientes-encabezado">
           <span class="admin-clientes-descripcion">Lista general de usuarios:</span>
 
-          <div class="admin-clientes-acciones">
-            <button id="btnDescargarClientesCSV" class="btn-app btn-descargar admin-btn-descargar-clientes">
-              <i class="ri-file-download-line"></i> Descargar Clientes (CSV)
+          <!-- 👇 BARRA DE BOTONES ALINEADA 👇 -->
+          <div class="admin-barra-acciones-clientes">
+            <button type="button" id="btnDescargarClientesCSV" class="btn-app btn-exportar-csv">
+              <i class="ri-file-excel-2-line"></i> Descargar Clientes (CSV)
             </button>
 
-            <button id="btnDescargarHistorialBaldesCSV" type="button" class="btn-app btn-descargar">
+            <button type="button" id="btnDescargarHistorialBaldesCSV" class="btn-app btn-historial-csv">
               <i class="ri-history-line"></i> Descargar Historial Baldes (CSV)
             </button>
 
-            <div class="admin-story-global-grupo">
-              <select id="selectAnioStoryGlobal" class="select-anio-global">
+            <div class="grupo-story-global">
+              <select id="selectAnioStoryGlobal" class="select-app-mini">
                 <option value="historico">Histórico</option>
                 <option value="2026">2026</option>
                 <option value="2027">2027</option>
                 <option value="2028">2028</option>
               </select>
-              <button id="btnDescargarStoryGlobal" type="button" class="btn-app btn-story-global">
+              <button type="button" id="btnDescargarStoryGlobal" class="btn-app btn-story-global">
                 <i class="ri-instagram-line"></i> Story Global
               </button>
             </div>
 
-            <button id="btnRefrescarClientes" type="button" class="btn btn-secundario admin-btn-refrescar-clientes">
-              <i class="ri-refresh-line icon"></i> Actualizar
+            <button type="button" id="btnRefrescarClientes" class="btn-app btn-actualizar-tabla">
+              <i class="ri-refresh-line"></i> Actualizar
             </button>
           </div>
+          <!-- 👆 FIN DE BARRA ALINEADA 👆 -->
         </div>
 
         <div id="contenedorListaClientes" class="admin-lista-clientes">
@@ -350,7 +374,6 @@
         </div>
       </div>
     </div>
-
     <!-- ACORDEÓN 6: ESTADO DE CUENTAS -->
     <div class="acordeon-item acordeon-cuentas">
       <button class="acordeon-header" onclick="toggleAcordeon('acc-cuentas', this)">
