@@ -597,7 +597,8 @@ function configurarBotonPedirBalde() {
 
       cargarTurnosDisponiblesCliente(clienteActual.zona); cargarMisSolicitudes(clienteActual.id);
     } catch (error) {
-      console.error("Error al solicitar retiro:", error); alert("Ocurrió un error al enviar la solicitud.");
+      console.error("Error al solicitar retiro:", error);
+      alert("Ocurrió un error al enviar la solicitud: " + error.message);
     } finally {
       btn.disabled = false; btn.innerHTML = '<i class="ri-send-plane-fill icon"></i> Confirmar Solicitud de Retiro';
     }
@@ -659,7 +660,10 @@ async function cargarMisSolicitudesFallback(clienteId) {
           <i class="ri-time-line icon"></i> <strong>Estado:</strong> <span class="estado-solicitud-resaltado">${p.estado || "Pendiente"}</span>
         </div>`;
     });
-  } catch (err) { console.error("Error en fallback de historial:", err); }
+  } catch (err) {
+    console.error("Error en fallback de historial:", err);
+    contenedor.innerHTML = '<p class="texto-suave" style="text-align:center;">Error al cargar el historial. Revisa tu conexión.</p>';
+  }
 }
 
 // ==========================================================
