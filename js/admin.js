@@ -212,8 +212,8 @@ async function renderizarListaZonas() {
 
       itemZona.innerHTML = `
         <div class="datos-zona-item">
-          <span class="nombre-zona-item">📍 ${dataZona.nombre}</span>
-          <span class="precio-zona-item">🪣 ${precio > 0 ? formatearMoneda(precio) + ' por balde' : 'Precio sin configurar'}</span>
+          <span class="nombre-zona-item"><i class="ri-map-pin-line"></i> ${dataZona.nombre}</span>
+          <span class="precio-zona-item"><i class="ri-archive-line"></i> ${precio > 0 ? formatearMoneda(precio) + ' por balde' : 'Precio sin configurar'}</span>
         </div>
         <div class="acciones-zona-item">
           <button type="button" onclick="editarZonaAdmin('${idZona}')" class="btn-app btn-zona-editar">
@@ -300,7 +300,7 @@ window.eliminarZonaAdmin = async function (idZona) {
 
     const confirmacion = await Swal.fire({
       title: `¿Eliminar "${nombreZona}"?`,
-      text: "Esta acción no afectará a clientes ya registrados, pero esa zona dejará de estar disponible para nuevas selecciones.",
+      text: "Esta acción no afectará a clientes ya registrados.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -390,7 +390,7 @@ if (btnGuardarZona) {
       });
 
       Swal.fire({
-        text: `¡Zona "${nombreZona}" creada con precio ${formatearMoneda(precioBalde)} por balde!`,
+        text: `¡Zona "${nombreZona}" creada con éxito!`,
         icon: "success",
         confirmButtonColor: "#16a34a"
       });
@@ -445,7 +445,7 @@ if (btnCrearCliente) {
         Swal.fire({
           icon: 'warning',
           title: 'Celular Duplicado',
-          text: '⚠️ Este número de celular ya está registrado. Para editar a este cliente, buscalo en la sección "Gestionar Cliente".',
+          text: '⚠️ Este número de celular ya está registrado.',
           confirmButtonColor: '#eab308'
         });
         return;
@@ -484,7 +484,7 @@ if (btnCrearCliente) {
 }
 
 // ==========================================================
-// 3. PUBLICAR Y GESTIONAR TURNOS DE RETIRO (GLOBAL)
+// 3. PUBLICAR Y GESTIONAR TURNOS DE RETIRO
 // ==========================================================
 const btnPublicarTurno = document.getElementById('btnPublicarTurno');
 if (btnPublicarTurno) {
@@ -823,20 +823,19 @@ function seleccionarCliente(cliente) {
         </h3>
         
         <div class="cliente-admin-meta">
-          <span>📅 <strong>Fecha Inicio:</strong> ${fechaInicioFmt}</span>
+          <span><i class="ri-calendar-line"></i> <strong>Fecha Inicio:</strong> ${fechaInicioFmt}</span>
           <span>|</span>
-          <span>📍 <strong>Zona:</strong> ${cliente.zona || 'General'}</span>
+          <span><i class="ri-map-pin-line"></i> <strong>Zona:</strong> ${cliente.zona || 'General'}</span>
           <span>|</span>
-          <span>🪣 <strong>Valor por balde:</strong> <span id="precioBaldeClienteAdmin">Cargando...</span></span>
+          <span><i class="ri-price-tag-3-line"></i> <strong>Valor por balde:</strong> <span id="precioBaldeClienteAdmin">Cargando...</span></span>
           <span>|</span>
-          <span>🏠 <strong>Dirección:</strong> ${cliente.direccion || 'Sin especificar'}</span>
+          <span><i class="ri-home-4-line"></i> <strong>Dirección:</strong> ${cliente.direccion || 'Sin especificar'}</span>
         </div>
 
         <div class="cliente-admin-metricas">
           <span><i class="ri-scales-3-line icono-menta"></i> Kilos: <strong>${Number(cliente.totalKilos || 0).toFixed(1)} kg</strong></span>
-          <span><i class="ri-delete-bin-6-line icono-naranja"></i> Baldes: <strong>${cliente.baldesCompostados || 0}</strong></span>
+          <span><i class="ri-archive-line icono-naranja"></i> Baldes: <strong>${cliente.baldesCompostados || 0}</strong></span>
           <span><i class="ri-money-dollar-box-line icono-verde"></i> Saldo: <strong class="${cliente.saldoPendiente > 0 ? 'saldo-dinamico-pendiente' : 'saldo-dinamico-ok'}">$${cliente.saldoPendiente || 0}</strong></span>
-          <!-- 2. Métrica del promedio agregada acá -->
           <span><i class="ri-timer-line icono-violeta"></i> Promedio de llenado: <strong>${promedio}</strong></span>
         </div>
       </div>
@@ -863,7 +862,7 @@ function seleccionarCliente(cliente) {
   const inputKilosASumar = document.getElementById('kilosASumarInput');
   const inputBaldesASumar = document.getElementById('baldesASumarInput');
   if (inputKilosASumar) inputKilosASumar.value = '0';
-  if (inputBaldesASumar) inputBaldesASumar.value = '0';
+  if (inputBaldesASumar) inputBaldesASumar.value = '1';
 
   // 3. Autocompletar la fecha de retiro con la fecha de hoy por defecto
   const inputFechaRetiro = document.getElementById('fechaRetiroManualInput');
@@ -880,6 +879,8 @@ function seleccionarCliente(cliente) {
   if (resultados) resultados.style.display = 'none';
 
   cargarResumenEconomicoClienteAdmin(cliente);
+  // Carga automática del historial en la vista
+  cargarHistorialCargasCliente(cliente.id);
 }
 
 async function cargarResumenEconomicoClienteAdmin(cliente) {
@@ -1123,127 +1124,423 @@ if (btnEliminar) {
 }
 
 // ==========================================================
-// 6. CARGA MANUAL DE RETIROS (CON CÁLCULO DE PROMEDIO)
+// 6. CARGA MANUAL, HISTORIAL EDITABLE Y CONTROL MENSUAL
 // ==========================================================
-const btnSumarKilosYBaldes = document.getElementById('btnSumarKilosYBaldes');
-if (btnSumarKilosYBaldes) {
-  btnSumarKilosYBaldes.addEventListener('click', async () => {
-    const clienteId = document.getElementById('clienteSeleccionadoId')?.value;
-    const kilosNuevos = parseFloat(document.getElementById('kilosASumarInput')?.value) || 0;
-    const baldesNuevos = parseInt(document.getElementById('baldesASumarInput')?.value) || 0;
-    const fechaInput = document.getElementById('fechaRetiroManualInput')?.value;
-    const estadoPago = document.getElementById('estadoPagoManualInput')?.value || 'pagado';
+async function ejecutarRegistroRetiroManual() {
+  const clienteId = document.getElementById('clienteSeleccionadoId')?.value;
+  if (!clienteId) {
+    Swal.fire('Atención', 'Primero buscá y seleccioná un vecino en el buscador.', 'warning');
+    return;
+  }
 
-    if (!clienteId) {
-      Swal.fire('Atención', 'Primero seleccioná un cliente.', 'warning');
-      return;
+  const kilosNuevos = parseFloat(document.getElementById('kilosASumarInput')?.value || 0);
+  const baldesNuevos = parseInt(document.getElementById('baldesASumarInput')?.value || 0, 10);
+  const fechaInput = document.getElementById('fechaRetiroManualInput')?.value;
+  const estadoPago = document.getElementById('estadoPagoManualInput')?.value || 'pagado';
+
+  if (kilosNuevos === 0 && baldesNuevos === 0) {
+    Swal.fire('Atención', 'Ingresá al menos una cantidad de kilos o baldes.', 'warning');
+    return;
+  }
+
+  if (baldesNuevos > 0 && !fechaInput) {
+    Swal.fire('Atención', 'Por favor seleccioná la fecha del retiro del balde.', 'warning');
+    return;
+  }
+
+  // Traer datos del cliente actual para validar
+  const snapCliente = await getDoc(doc(db, "usuarios", clienteId));
+  if (!snapCliente.exists()) {
+    Swal.fire('Error', 'El cliente no existe en la base de datos.', 'error');
+    return;
+  }
+  const dataCliente = snapCliente.data();
+  const nombreCliente = dataCliente.nombre || 'Vecino/a';
+  const textoPago = estadoPago === 'pagado' ? '<i class="ri-checkbox-circle-line" style="color: #16a34a;"></i> Pagado' : '<i class="ri-time-line" style="color: #eab308;"></i> Pendiente';
+
+  // Modal de confirmación para evitar equivocaciones
+  const { isConfirmed } = await Swal.fire({
+    title: '¿Confirmar recolección?',
+    html: `
+      <div style="text-align: left; background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 15px;">
+        <p><strong><i class="ri-user-line"></i> Cliente:</strong> ${nombreCliente}</p>
+        <p><strong><i class="ri-scales-3-line"></i> Kilos:</strong> ${kilosNuevos} kg</p>
+        <p><strong><i class="ri-archive-line"></i> Baldes:</strong> ${baldesNuevos}</p>
+        <p><strong><i class="ri-calendar-line"></i> Fecha:</strong> ${fechaInput || 'Hoy'}</p>
+        <p><strong><i class="ri-bank-card-line"></i> Pago:</strong> ${textoPago}</p>
+      </div>
+    `,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, registrar',
+    cancelButtonText: 'Corregir',
+    confirmButtonColor: '#16a34a'
+  });
+
+  if (!isConfirmed) return;
+
+  try {
+    const mapaPrecios = await obtenerMapaPreciosZonas();
+    const precioBalde = Number(mapaPrecios.get(claveZona(dataCliente.zona)) || 0);
+    const totalPesos = baldesNuevos * precioBalde;
+
+    const fechaNuevaObj = fechaInput ? new Date(fechaInput + "T12:00:00") : new Date();
+    const fechaTimestamp = Timestamp.fromDate(fechaNuevaObj);
+    const anio = fechaNuevaObj.getFullYear().toString();
+    const mes = `${anio}-${String(fechaNuevaObj.getMonth() + 1).padStart(2, '0')}`;
+
+    // Cálculo del promedio de días (solo si se retira balde)
+    let nuevoPromedio = dataCliente.promedioDiasLlenado || 0;
+    if (baldesNuevos > 0 && fechaInput) {
+      if (dataCliente.fechaUltimoRetiro && typeof dataCliente.fechaUltimoRetiro.toDate === 'function') {
+        const fechaUltimaObj = dataCliente.fechaUltimoRetiro.toDate();
+        const diffMs = Math.abs(fechaNuevaObj - fechaUltimaObj);
+        const diasPasados = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        nuevoPromedio = nuevoPromedio > 0 ? (nuevoPromedio + diasPasados) / 2 : diasPasados;
+      }
     }
 
-    if (kilosNuevos <= 0 && baldesNuevos <= 0) {
-      Swal.fire('Atención', 'Ingresá al menos una cantidad de kilos o baldes.', 'warning');
-      return;
-    }
+    const userRef = doc(db, "usuarios", clienteId);
 
-    if (baldesNuevos > 0 && !fechaInput) {
-      Swal.fire('Atención', 'Por favor seleccioná la fecha del retiro del balde.', 'warning');
-      return;
-    }
+    // Guardado en Base de Datos (Recolecciones + Update Perfil)
+    await runTransaction(db, async (transaction) => {
+      // Creamos el registro en recolecciones (incluso si solo carga kilos, para el control mensual)
+      const recoleccionRef = doc(collection(db, 'recolecciones'));
+      transaction.set(recoleccionRef, {
+        clienteId: clienteId,
+        clienteNombre: nombreCliente,
+        zona: dataCliente.zona || 'General',
+        cantidadBaldes: baldesNuevos,
+        kilos: kilosNuevos,
+        precioUnitario: precioBalde,
+        total: totalPesos,
+        estadoPago: estadoPago,
+        turno: 'Carga Manual Admin',
+        fechaRetiro: fechaTimestamp,
+        fechaPago: estadoPago === 'pagado' ? fechaTimestamp : null,
+        anio: anio,
+        mes: mes,
+        creadoEn: serverTimestamp()
+      });
 
-    try {
-      const userRef = doc(db, "usuarios", clienteId);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) return;
-      const dataCliente = userSnap.data();
-
-      // Buscamos el precio de la zona del cliente
-      const mapaPrecios = await obtenerMapaPreciosZonas();
-      const precioBalde = Number(mapaPrecios.get(claveZona(dataCliente.zona)) || 0);
-      const totalPesos = baldesNuevos * precioBalde;
-
-      // 1. CÁLCULO DEL PROMEDIO DE DÍAS (solo si se retira balde)
-      let nuevoPromedio = dataCliente.promedioDiasLlenado || 0;
-      let fechaNuevaObj = null;
-
-      if (fechaInput) {
-        fechaNuevaObj = new Date(fechaInput + "T12:00:00");
-        if (dataCliente.fechaUltimoRetiro && typeof dataCliente.fechaUltimoRetiro.toDate === 'function') {
-          const fechaUltimaObj = dataCliente.fechaUltimoRetiro.toDate();
-          const diffMs = Math.abs(fechaNuevaObj - fechaUltimaObj);
-          // Diferencia en días redondeada
-          const diasPasados = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-          nuevoPromedio = nuevoPromedio > 0 ? (nuevoPromedio + diasPasados) / 2 : diasPasados;
+      // Actualizamos el perfil
+      const payloadUsuario = {};
+      if (kilosNuevos > 0) payloadUsuario.totalKilos = increment(kilosNuevos);
+      if (baldesNuevos > 0) {
+        payloadUsuario.baldesCompostados = increment(baldesNuevos);
+        payloadUsuario.fechaUltimoRetiro = fechaTimestamp;
+        if (nuevoPromedio > 0) payloadUsuario.promedioDiasLlenado = nuevoPromedio;
+        if (estadoPago === 'pendiente') {
+          payloadUsuario.saldoPendiente = Number(dataCliente.saldoPendiente || 0) + totalPesos;
         }
       }
-
-      // 2. GUARDADO EN BASE DE DATOS
-      await runTransaction(db, async (transaction) => {
-        // Si hay baldes retirados, generamos el registro formal de recolección
-        if (baldesNuevos > 0) {
-          const recoleccionRef = doc(collection(db, 'recolecciones'));
-          transaction.set(recoleccionRef, {
-            clienteId: clienteId,
-            clienteNombre: dataCliente.nombre || 'Cliente Manual',
-            zona: dataCliente.zona || 'General',
-            cantidadBaldes: baldesNuevos,
-            kilos: kilosNuevos, // 👈 AGREGAR ESTA LÍNEA
-            precioUnitario: precioBalde,
-            total: totalPesos,
-            estadoPago: estadoPago,
-            turno: 'Carga Manual Admin',
-            fechaRetiro: Timestamp.fromDate(fechaNuevaObj),
-            fechaPago: estadoPago === 'pagado' ? Timestamp.fromDate(fechaNuevaObj) : null,
-            creadoEn: serverTimestamp()
-          });
-        }
-
-        // Actualizamos el perfil del cliente (kilos, baldes, saldos y promedios)
-        const payloadUsuario = {};
-        if (kilosNuevos > 0) payloadUsuario.totalKilos = increment(kilosNuevos);
-        if (baldesNuevos > 0) {
-          payloadUsuario.baldesCompostados = increment(baldesNuevos);
-          payloadUsuario.fechaUltimoRetiro = Timestamp.fromDate(fechaNuevaObj);
-          if (nuevoPromedio > 0) payloadUsuario.promedioDiasLlenado = nuevoPromedio;
-
-          if (estadoPago === 'pendiente') {
-            payloadUsuario.saldoPendiente = Number(dataCliente.saldoPendiente || 0) + totalPesos;
-          }
-        }
-
+      if (Object.keys(payloadUsuario).length > 0) {
         transaction.update(userRef, payloadUsuario);
-      });
+      }
+    });
 
-      // Historial anual para las métricas e impacto ambiental (Stories)
-      const anioActual = new Date().getFullYear().toString();
-      await addDoc(collection(db, "historial_impacto"), {
-        clienteId: clienteId,
-        kilos: kilosNuevos,
-        baldes: baldesNuevos,
-        anio: anioActual,
-        fecha: serverTimestamp()
-      });
+    // Historial impacto anual para las Stories
+    await addDoc(collection(db, "historial_impacto"), {
+      clienteId: clienteId,
+      kilos: kilosNuevos,
+      baldes: baldesNuevos,
+      anio: anio,
+      fecha: serverTimestamp()
+    });
 
-      Swal.fire({
-        icon: 'success',
-        title: '¡Registrado con éxito!',
-        text: baldesNuevos > 0 ? `Retiro registrado (${estadoPago === 'pendiente' ? 'con saldo pendiente' : 'pagado'}).` : 'Kilos sumados correctamente.',
-        confirmButtonColor: '#16a34a'
-      });
+    Swal.fire({
+      icon: 'success',
+      title: '¡Registrado con éxito!',
+      text: `Se cargaron ${baldesNuevos} baldes y ${kilosNuevos} kg a ${nombreCliente}.`,
+      confirmButtonColor: '#16a34a'
+    });
 
-      // Limpiamos los inputs operativos
-      document.getElementById('kilosASumarInput').value = '0';
-      document.getElementById('baldesASumarInput').value = '0';
+    // Resetear formulario para no dejar datos pegados
+    document.getElementById('kilosASumarInput').value = '0';
+    document.getElementById('baldesASumarInput').value = '1';
 
-      await refrescarClienteActual();
-      await cargarClientesIniciales();
-      renderizarListaCompletaClientes();
-      cargarEstadoCuentas();
+    // Refrescar vistas y tablas
+    cargarHistorialCargasCliente(clienteId);
+    cargarResumenMensualEze();
+    await refrescarClienteActual();
+    await cargarClientesIniciales();
+    renderizarListaCompletaClientes();
+    cargarEstadoCuentas();
 
-    } catch (error) {
-      console.error("Error al registrar retiro manual:", error);
-      Swal.fire('Error', 'No se pudo guardar el registro.', 'error');
+  } catch (error) {
+    console.error("Error al registrar carga manual:", error);
+    Swal.fire('Error', 'No se pudo guardar la recolección.', 'error');
+  }
+}
+
+// 📌 HISTORIAL RECIENTE POR CLIENTE (Con ordenamiento en memoria sin requerir índice en Firebase)
+async function cargarHistorialCargasCliente(clienteId) {
+  const contenedor = document.getElementById('contenedorHistorialCargasCliente');
+  if (!contenedor || !clienteId) return;
+
+  try {
+    const qRecol = query(
+      collection(db, "recolecciones"),
+      where("clienteId", "==", clienteId)
+    );
+    const snap = await getDocs(qRecol);
+
+    if (snap.empty) {
+      contenedor.innerHTML = '<p class="texto-suave" style="font-size: 13px;">No hay recolecciones recientes registradas para este vecino.</p>';
+      return;
+    }
+
+    let cargas = [];
+    snap.forEach((d) => {
+      cargas.push({ idDoc: d.id, ...d.data() });
+    });
+
+    // Las ordenamos nosotros con JavaScript
+    cargas.sort((a, b) => (b.fechaRetiro?.seconds || 0) - (a.fechaRetiro?.seconds || 0));
+
+    const ultimasCargas = cargas.slice(0, 5);
+    let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+    
+    ultimasCargas.forEach((rec) => {
+      const idDoc = rec.idDoc;
+      const fecha = rec.fechaRetiro?.toDate ? rec.fechaRetiro.toDate().toLocaleDateString('es-AR') : 'S/F';
+      const baldes = rec.cantidadBaldes || 0;
+      const kilos = rec.kilos || 0;
+
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px;">
+          <div>
+            <span style="font-weight: 600; font-size: 13px;"><i class="ri-calendar-line"></i> ${fecha}</span>
+            <span style="margin-left: 8px; font-size: 13px; color: #475569;"><i class="ri-archive-line"></i> ${baldes} baldes | <i class="ri-scales-3-line"></i> ${kilos} kg</span>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button onclick="editarCargaManual('${idDoc}', '${clienteId}', ${baldes}, ${kilos})" class="btn-app" style="padding: 4px 8px; font-size: 12px; background: #0284c7; color: white;">
+              <i class="ri-edit-line"></i> Editar
+            </button>
+            <button onclick="eliminarCargaManual('${idDoc}', '${clienteId}', ${baldes}, ${kilos})" class="btn-app" style="padding: 4px 8px; font-size: 12px; background: #ef4444; color: white;">
+              <i class="ri-delete-bin-line"></i> Borrar
+            </button>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    contenedor.innerHTML = html;
+
+  } catch (error) {
+    console.error("Error al cargar historial del cliente:", error);
+    contenedor.innerHTML = '<p class="texto-suave">Error al cargar historial.</p>';
+  }
+}
+
+// ✏️ EDITAR CARGA EXISTENTE
+window.editarCargaManual = async function (idRecoleccion, clienteId, baldesActuales, kilosActuales) {
+  const { value: formValues } = await Swal.fire({
+    title: 'Editar Recolección',
+    html: `
+      <div style="text-align: left;">
+        <label style="font-weight:600;"><i class="ri-archive-line"></i> Cantidad de baldes:</label>
+        <input id="swalEditBaldes" type="number" class="swal2-input" value="${baldesActuales}">
+        <label style="margin-top: 10px; display: block; font-weight:600;"><i class="ri-scales-3-line"></i> Kilos:</label>
+        <input id="swalEditKilos" type="number" step="0.1" class="swal2-input" value="${kilosActuales}">
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar Corrección',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#16a34a',
+    preConfirm: () => {
+      return {
+        nuevosBaldes: parseInt(document.getElementById('swalEditBaldes').value || 0, 10),
+        nuevosKilos: parseFloat(document.getElementById('swalEditKilos').value || 0)
+      };
     }
   });
+
+  if (!formValues) return;
+
+  const difBaldes = formValues.nuevosBaldes - baldesActuales;
+  const difKilos = formValues.nuevosKilos - kilosActuales;
+
+  try {
+    await updateDoc(doc(db, "recolecciones", idRecoleccion), {
+      cantidadBaldes: formValues.nuevosBaldes,
+      kilos: formValues.nuevosKilos
+    });
+
+    await updateDoc(doc(db, "usuarios", clienteId), {
+      baldesCompostados: increment(difBaldes),
+      totalKilos: increment(difKilos)
+    });
+
+    Swal.fire('¡Corregido!', 'La recolección y los totales del vecino se actualizaron.', 'success');
+    cargarHistorialCargasCliente(clienteId);
+    cargarResumenMensualEze();
+    await refrescarClienteActual();
+    renderizarListaCompletaClientes();
+
+  } catch (error) {
+    console.error("Error al editar registro:", error);
+    Swal.fire('Error', 'No se pudo editar el registro.', 'error');
+  }
+};
+
+// 🗑️ ELIMINAR CARGA 
+window.eliminarCargaManual = async function (idRecoleccion, clienteId, baldes, kilos) {
+  const { isConfirmed } = await Swal.fire({
+    title: '¿Eliminar este registro?',
+    text: `Se borrará la recolección y se restarán ${baldes} baldes y ${kilos} kg del perfil del cliente.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#ef4444'
+  });
+
+  if (!isConfirmed) return;
+
+  try {
+    await deleteDoc(doc(db, "recolecciones", idRecoleccion));
+
+    await updateDoc(doc(db, "usuarios", clienteId), {
+      baldesCompostados: increment(-baldes),
+      totalKilos: increment(-kilos)
+    });
+
+    Swal.fire('Eliminado', 'Se revirtió la carga con éxito.', 'success');
+    cargarHistorialCargasCliente(clienteId);
+    cargarResumenMensualEze();
+    await refrescarClienteActual();
+    renderizarListaCompletaClientes();
+
+  } catch (error) {
+    console.error("Error al eliminar recolección:", error);
+    Swal.fire('Error', 'No se pudo eliminar el registro.', 'error');
+  }
+};
+
+// 📌 RESUMEN Y CONTROL MENSUAL
+async function cargarResumenMensualEze() {
+  const inputMes = document.getElementById('inputFiltroMesControl');
+  const tbody = document.getElementById('tablaControlMensualBody');
+  if (!tbody) return;
+
+  if (inputMes && !inputMes.value) {
+    inputMes.value = new Date().toISOString().substring(0, 7);
+  }
+  const mesSeleccionado = inputMes?.value;
+
+  tbody.innerHTML = '<tr><td colspan="6" class="texto-suave admin-estado-tabla">Cargando recolecciones del mes...</td></tr>';
+
+  try {
+    const [anioStr, mesStr] = mesSeleccionado.split('-');
+    const anioNum = parseInt(anioStr, 10);
+    const mesNum = parseInt(mesStr, 10) - 1; 
+    const fechaInicio = Timestamp.fromDate(new Date(anioNum, mesNum, 1));
+    const fechaFin = Timestamp.fromDate(new Date(anioNum, mesNum + 1, 1));
+
+    const qMes = query(
+      collection(db, "recolecciones"),
+      where("fechaRetiro", ">=", fechaInicio),
+      where("fechaRetiro", "<", fechaFin),
+      orderBy("fechaRetiro", "desc")
+    );
+    const snap = await getDocs(qMes);
+
+    let totBaldes = 0;
+    let totKilos = 0;
+    let totMonto = 0;
+    let cantRegistros = snap.size;
+
+    if (snap.empty) {
+      tbody.innerHTML = '<tr><td colspan="6" class="texto-suave admin-estado-tabla">No hay recolecciones en este mes.</td></tr>';
+      document.getElementById('controlTotalBaldesMes').innerText = '0';
+      document.getElementById('controlTotalKilosMes').innerText = '0 kg';
+      document.getElementById('controlTotalRegistrosMes').innerText = '0';
+      document.getElementById('controlTotalMontoMes').innerText = '$0';
+      return;
+    }
+
+    let filasHtml = '';
+    snap.forEach((d) => {
+      const r = d.data();
+      const idDoc = d.id;
+      const b = Number(r.cantidadBaldes || 0);
+      const k = Number(r.kilos || 0);
+      const monto = Number(r.total || 0);
+      const fecha = r.fechaRetiro?.toDate ? r.fechaRetiro.toDate().toLocaleDateString('es-AR') : 'S/F';
+
+      totBaldes += b;
+      totKilos += k;
+      totMonto += monto;
+
+      filasHtml += `
+        <tr>
+          <td>${fecha}</td>
+          <td><strong>${r.clienteNombre || 'Sin nombre'}</strong></td>
+          <td><i class="ri-archive-line"></i> ${b}</td>
+          <td><i class="ri-scales-3-line"></i> ${k.toFixed(1)} kg</td>
+          <td>${(r.estadoPago || '').toLowerCase() === 'pagado' ? '<i class="ri-checkbox-circle-line" style="color: #16a34a;"></i> Pagado' : '<i class="ri-time-line" style="color: #eab308;"></i> Pendiente'}</td>
+          <td class="admin-texto-centro">
+            <button onclick="editarCargaManual('${idDoc}', '${r.clienteId}', ${b}, ${k})" class="btn-app" style="padding: 4px 8px; font-size: 11px; background: #0284c7; color: white;">
+              <i class="ri-edit-line"></i>
+            </button>
+            <button onclick="eliminarCargaManual('${idDoc}', '${r.clienteId}', ${b}, ${k})" class="btn-app" style="padding: 4px 8px; font-size: 11px; background: #ef4444; color: white;">
+              <i class="ri-delete-bin-line"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = filasHtml;
+    document.getElementById('controlTotalBaldesMes').innerText = totBaldes;
+    document.getElementById('controlTotalKilosMes').innerText = `${totKilos.toFixed(1)} kg`;
+    document.getElementById('controlTotalRegistrosMes').innerText = cantRegistros;
+    document.getElementById('controlTotalMontoMes').innerText = `$${totMonto}`;
+
+  } catch (error) {
+    console.error("Error al cargar resumen mensual:", error);
+    tbody.innerHTML = '<tr><td colspan="6" class="texto-suave">Error al cargar datos.</td></tr>';
+  }
+}
+
+async function descargarControlMensualCSV() {
+  const mesSeleccionado = document.getElementById('inputFiltroMesControl')?.value;
+  if (!mesSeleccionado) return;
+
+  try {
+    const [anioStr, mesStr] = mesSeleccionado.split('-');
+    const anioNum = parseInt(anioStr, 10);
+    const mesNum = parseInt(mesStr, 10) - 1;
+    const fechaInicio = Timestamp.fromDate(new Date(anioNum, mesNum, 1));
+    const fechaFin = Timestamp.fromDate(new Date(anioNum, mesNum + 1, 1));
+
+    const qMes = query(
+      collection(db, "recolecciones"),
+      where("fechaRetiro", ">=", fechaInicio),
+      where("fechaRetiro", "<", fechaFin),
+      orderBy("fechaRetiro", "asc")
+    );
+    const snap = await getDocs(qMes);
+
+    if (snap.empty) {
+      Swal.fire('Sin registros', 'No hay recolecciones en este mes para exportar.', 'info');
+      return;
+    }
+
+    let csv = '\uFEFFFecha;Cliente;ID / Celular;Zona;Baldes;Kilos;Estado Pago;Total\r\n';
+    snap.forEach((d) => {
+      const r = d.data();
+      const fecha = r.fechaRetiro?.toDate ? r.fechaRetiro.toDate().toLocaleDateString('es-AR') : '';
+      csv += `"${fecha}";"${r.clienteNombre || ''}";"${r.clienteId || ''}";"${r.zona || ''}";"${r.cantidadBaldes || 0}";"${r.kilos || 0}";"${r.estadoPago || ''}";"${r.total || 0}"\r\n`;
+    });
+
+    descargarArchivoCSV(csv, `control_baldes_${mesSeleccionado}.csv`);
+  } catch (e) {
+    console.error("Error al exportar mes:", e);
+    Swal.fire('Error', 'No se pudo generar el archivo CSV.', 'error');
+  }
 }
 
 // ==========================================================
@@ -1253,10 +1550,8 @@ let ultimosPedidosHojaRuta = [];
 
 function procesarFechaHoraTurno(strTurno) {
   if (!strTurno) return { fechaIso: "9999-99-99", horaInicio: "23:59" };
-
   let fechaIso = "9999-99-99";
   let horaInicio = "23:59";
-
   const matchFecha = strTurno.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (matchFecha) {
     const dia = matchFecha[1].padStart(2, '0');
@@ -1264,12 +1559,8 @@ function procesarFechaHoraTurno(strTurno) {
     const anio = matchFecha[3];
     fechaIso = `${anio}-${mes}-${dia}`;
   }
-
   const matchHora = strTurno.match(/(\d{2}:\d{2})/);
-  if (matchHora) {
-    horaInicio = matchHora[1];
-  }
-
+  if (matchHora) horaInicio = matchHora[1];
   return { fechaIso, horaInicio };
 }
 
@@ -1281,14 +1572,7 @@ function limpiarHorarioTurno(strTurno) {
 async function cargarPedidosAdmin() {
   const tbody = document.getElementById('tablaHojaRutaBody') || document.getElementById('listaPedidosAdmin');
   if (!tbody) return;
-
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="4" class="texto-suave admin-estado-tabla">
-        Cargando hoja de ruta...
-      </td>
-    </tr>
-  `;
+  tbody.innerHTML = `<tr><td colspan="4" class="texto-suave admin-estado-tabla">Cargando hoja de ruta...</td></tr>`;
 
   try {
     let q = query(collection(db, "pedidos_retiro"), where("estado", "in", ["Pendiente", "pendiente"]));
@@ -1300,27 +1584,15 @@ async function cargarPedidosAdmin() {
     }
 
     if (querySnapshot.empty) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="4" class="texto-suave admin-estado-tabla">
-            No hay retiros pendientes programados.
-          </td>
-        </tr>
-      `;
+      tbody.innerHTML = `<tr><td colspan="4" class="texto-suave admin-estado-tabla">No hay retiros pendientes programados.</td></tr>`;
       ultimosPedidosHojaRuta = [];
       return;
     }
 
     let pedidos = [];
-    querySnapshot.forEach((docSnap) => {
-      pedidos.push({ id: docSnap.id, ...docSnap.data() });
-    });
+    querySnapshot.forEach((docSnap) => { pedidos.push({ id: docSnap.id, ...docSnap.data() }); });
 
-    const [usuariosSnap, zonasSnap] = await Promise.all([
-      getDocs(collection(db, 'usuarios')),
-      getDocs(collection(db, 'zonas'))
-    ]);
-
+    const [usuariosSnap, zonasSnap] = await Promise.all([getDocs(collection(db, 'usuarios')), getDocs(collection(db, 'zonas'))]);
     const clientesPorId = new Map();
     usuariosSnap.forEach(docSnap => {
       if (docSnap.id !== 'admin') clientesPorId.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
@@ -1344,63 +1616,31 @@ async function cargarPedidosAdmin() {
     });
 
     ultimosPedidosHojaRuta = pedidos;
-
     const mapDias = {};
 
     pedidos.forEach(p => {
       const turnoVal = p.turnoElegido || p.turno || p.fechaHora || '';
       const { fechaIso, horaInicio } = procesarFechaHoraTurno(turnoVal);
-
       const matchFecha = turnoVal.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
       const fechaTexto = matchFecha ? matchFecha[1] : (fechaIso !== "9999-99-99" ? fechaIso : "Fecha a Confirmar");
       const zonaNombre = (p.zona || p.clienteZona || 'General').trim();
-
-      if (!mapDias[fechaIso]) {
-        mapDias[fechaIso] = {
-          fechaTexto: fechaTexto,
-          zonas: {}
-        };
-      }
-
-      if (!mapDias[fechaIso].zonas[zonaNombre]) {
-        mapDias[fechaIso].zonas[zonaNombre] = [];
-      }
-
-      mapDias[fechaIso].zonas[zonaNombre].push({
-        ...p,
-        horaInicio: horaInicio
-      });
+      if (!mapDias[fechaIso]) mapDias[fechaIso] = { fechaTexto: fechaTexto, zonas: {} };
+      if (!mapDias[fechaIso].zonas[zonaNombre]) mapDias[fechaIso].zonas[zonaNombre] = [];
+      mapDias[fechaIso].zonas[zonaNombre].push({ ...p, horaInicio: horaInicio });
     });
 
     tbody.innerHTML = "";
-
     const fechasOrdenadas = Object.keys(mapDias).sort();
 
     fechasOrdenadas.forEach(fechaIso => {
       const grupoDia = mapDias[fechaIso];
-
-      tbody.innerHTML += `
-        <tr class="ruta-dia-row">
-          <td colspan="4" class="ruta-dia-cell">
-            <i class="ri-calendar-event-fill ruta-icono-dia"></i> DÍA: ${grupoDia.fechaTexto}
-          </td>
-        </tr>
-      `;
-
+      tbody.innerHTML += `<tr class="ruta-dia-row"><td colspan="4" class="ruta-dia-cell"><i class="ri-calendar-event-fill ruta-icono-dia"></i> DÍA: ${grupoDia.fechaTexto}</td></tr>`;
       const zonasOrdenadas = Object.keys(grupoDia.zonas).sort();
-
       zonasOrdenadas.forEach(zona => {
         const listaPedidosZona = grupoDia.zonas[zona];
         listaPedidosZona.sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
-
-        tbody.innerHTML += `
-          <tr class="ruta-zona-row">
-            <td colspan="4" class="ruta-zona-cell">
-              <i class="ri-map-pin-2-fill ruta-icono-zona"></i> ZONA: ${zona.toUpperCase()} (${listaPedidosZona.length})
-            </td>
-          </tr>
-        `;
-
+        tbody.innerHTML += `<tr class="ruta-zona-row"><td colspan="4" class="ruta-zona-cell"><i class="ri-map-pin-2-fill ruta-icono-zona"></i> ZONA: ${zona.toUpperCase()} (${listaPedidosZona.length})</td></tr>`;
+        
         listaPedidosZona.forEach(p => {
           const turnoVal = p.turnoElegido || p.turno || p.fechaHora || 'Sin turno';
           const horarioLimpio = limpiarHorarioTurno(turnoVal);
@@ -1409,42 +1649,27 @@ async function cargarPedidosAdmin() {
           const precioRuta = Number(p._precioBaldeActual || 0);
           const saldoPrevio = Number(p._saldoPendienteActual || 0);
           const textoPrecio = precioRuta > 0 ? `${formatearMoneda(precioRuta)}/balde` : 'Precio sin configurar';
-          const textoSaldo = saldoPrevio > 0
-            ? `<span class="ruta-saldo-pendiente">⚠️ Saldo anterior: ${formatearMoneda(saldoPrevio)}</span>`
-            : `<span class="ruta-saldo-ok">✅ Cuenta al día</span>`;
-
+          const textoSaldo = saldoPrevio > 0 ? `<span class="ruta-saldo-pendiente">⚠️ Saldo anterior: ${formatearMoneda(saldoPrevio)}</span>` : `<span class="ruta-saldo-ok"><i class="ri-checkbox-circle-line"></i> Cuenta al día</span>`;
+          
           tbody.innerHTML += `
             <tr id="pedido-${p.id}" class="ruta-pedido-row">
               <td class="ruta-pedido-cliente">
                 <strong class="ruta-pedido-nombre">${nombreVal}</strong>
-                <div class="ruta-pedido-subtexto">🪣 ${textoPrecio} · ${textoSaldo}</div>
+                <div class="ruta-pedido-subtexto"><i class="ri-archive-line"></i> ${textoPrecio} · ${textoSaldo}</div>
               </td>
-              <td class="ruta-pedido-direccion">
-                ${direccionVal}
-              </td>
-              <td class="ruta-pedido-turno">
-                ${horarioLimpio}
-              </td>
+              <td class="ruta-pedido-direccion">${direccionVal}</td>
+              <td class="ruta-pedido-turno">${horarioLimpio}</td>
               <td class="ruta-pedido-accion">
-                <button class="btn-completar-mini btn-completar-ruta" onclick="marcarPedidoCompletado('${p.id}')" title="Marcar como retirado">
-                  ✓ Retirado
-                </button>
+                <button class="btn-completar-mini btn-completar-ruta" onclick="marcarPedidoCompletado('${p.id}')" title="Marcar como retirado">✓ Retirado</button>
               </td>
             </tr>
           `;
         });
       });
     });
-
   } catch (error) {
     console.error("Error al cargar pedidos:", error);
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4" class="admin-estado-error-tabla">
-          Error al cargar los pedidos.
-        </td>
-      </tr>
-    `;
+    tbody.innerHTML = `<tr><td colspan="4" class="admin-estado-error-tabla">Error al cargar los pedidos.</td></tr>`;
   }
 }
 
@@ -1454,36 +1679,21 @@ window.marcarPedidoCompletado = async function (pedidoId) {
   try {
     let pedidoRef = doc(db, 'pedidos_retiro', pedidoId);
     let pedidoSnap = await getDoc(pedidoRef);
-
     if (!pedidoSnap.exists()) {
       pedidoRef = doc(db, 'pedidos', pedidoId);
       pedidoSnap = await getDoc(pedidoRef);
     }
-
-    if (!pedidoSnap.exists()) {
-      Swal.fire('Atención', 'No se encontró el pedido.', 'warning');
-      return;
-    }
-
+    if (!pedidoSnap.exists()) { Swal.fire('Atención', 'No se encontró el pedido.', 'warning'); return; }
+    
     const pedido = pedidoSnap.data();
-    if ((pedido.estado || '').toLowerCase() === 'completado') {
-      Swal.fire('Atención', 'Este retiro ya fue registrado.', 'info');
-      cargarPedidosAdmin();
-      return;
-    }
-
+    if ((pedido.estado || '').toLowerCase() === 'completado') { Swal.fire('Atención', 'Este retiro ya fue registrado.', 'info'); cargarPedidosAdmin(); return; }
+    
     const clienteId = pedido.clienteId || pedido.clienteCelu;
-    if (!clienteId) {
-      Swal.fire('Error', 'El pedido no tiene un cliente asociado.', 'error');
-      return;
-    }
-
+    if (!clienteId) { Swal.fire('Error', 'El pedido no tiene un cliente asociado.', 'error'); return; }
+    
     const clienteSnap = await getDoc(doc(db, 'usuarios', clienteId));
-    if (!clienteSnap.exists()) {
-      Swal.fire('Error', 'No se encontró el perfil del cliente.', 'error');
-      return;
-    }
-
+    if (!clienteSnap.exists()) { Swal.fire('Error', 'No se encontró el perfil del cliente.', 'error'); return; }
+    
     const cliente = clienteSnap.data();
     const zonaNombre = cliente.zona || pedido.zona || pedido.clienteZona || 'General';
     const zona = await obtenerZonaPorNombre(zonaNombre);
@@ -1508,19 +1718,16 @@ window.marcarPedidoCompletado = async function (pedidoId) {
         <div class="swal-form-grid">
           <div class="swal-resumen-retiro">
             <strong>${nombreCliente}</strong><br>
-            <span>📍 ${zonaNombre}</span><br>
-            <span>🪣 Precio actual: <strong>${formatearMoneda(precioBalde)}</strong> por balde</span>
+            <span><i class="ri-map-pin-line"></i> ${zonaNombre}</span><br>
+            <span><i class="ri-archive-line"></i> Precio actual: <strong>${formatearMoneda(precioBalde)}</strong> por balde</span>
           </div>
-
           <label for="swalCantBaldes" class="swal-label-bloque">Baldes retirados</label>
           <input id="swalCantBaldes" type="number" min="1" max="50" step="1" value="${cantidadInicial}" class="swal2-input swal-control-ancho">
-
           <label for="swalEstadoPago" class="swal-label-bloque">Estado del pago</label>
           <select id="swalEstadoPago" class="swal2-select swal-control-ancho">
             <option value="pagado">✅ Cobrado en el momento</option>
             <option value="pendiente">⏳ Quedó pendiente de pago</option>
           </select>
-
           <div class="swal-total-retiro">
             <span>Total de la recolección</span>
             <strong id="swalTotalRetiro">${formatearMoneda(cantidadInicial * precioBalde)}</strong>
@@ -1544,16 +1751,8 @@ window.marcarPedidoCompletado = async function (pedidoId) {
       preConfirm: () => {
         const cantidad = Number(document.getElementById('swalCantBaldes')?.value);
         const estadoPago = document.getElementById('swalEstadoPago')?.value;
-
-        if (!Number.isInteger(cantidad) || cantidad <= 0) {
-          Swal.showValidationMessage('Ingresá una cantidad válida de baldes.');
-          return false;
-        }
-        if (!['pagado', 'pendiente'].includes(estadoPago)) {
-          Swal.showValidationMessage('Seleccioná el estado del pago.');
-          return false;
-        }
-
+        if (!Number.isInteger(cantidad) || cantidad <= 0) { Swal.showValidationMessage('Ingresá una cantidad válida de baldes.'); return false; }
+        if (!['pagado', 'pendiente'].includes(estadoPago)) { Swal.showValidationMessage('Seleccioná el estado del pago.'); return false; }
         return { cantidad, estadoPago };
       }
     });
@@ -1566,60 +1765,27 @@ window.marcarPedidoCompletado = async function (pedidoId) {
     const usuarioRef = doc(db, 'usuarios', clienteId);
 
     await runTransaction(db, async (transaction) => {
-      const [pedidoActualSnap, usuarioActualSnap] = await Promise.all([
-        transaction.get(pedidoRef),
-        transaction.get(usuarioRef)
-      ]);
-
+      const [pedidoActualSnap, usuarioActualSnap] = await Promise.all([transaction.get(pedidoRef), transaction.get(usuarioRef)]);
       if (!pedidoActualSnap.exists()) throw new Error('El pedido ya no existe.');
       if (!usuarioActualSnap.exists()) throw new Error('El cliente ya no existe.');
-      if ((pedidoActualSnap.data().estado || '').toLowerCase() === 'completado') {
-        throw new Error('Este retiro ya había sido registrado.');
-      }
+      if ((pedidoActualSnap.data().estado || '').toLowerCase() === 'completado') throw new Error('Este retiro ya había sido registrado.');
 
       const saldoActual = Number(usuarioActualSnap.data().saldoPendiente || 0);
 
       transaction.set(recoleccionRef, {
-        clienteId,
-        clienteNombre: nombreCliente,
-        pedidoId,
-        zona: zonaNombre,
-        cantidadBaldes: cantidad,
-        precioUnitario: precioBalde,
-        total,
-        estadoPago,
-        turno: pedido.turnoElegido || pedido.turno || pedido.fechaHora || '',
-        notaEntrega: pedido.nota || '',
-        fechaRetiro: serverTimestamp(),
-        fechaPago: estadoPago === 'pagado' ? serverTimestamp() : null,
+        clienteId, clienteNombre: nombreCliente, pedidoId, zona: zonaNombre, cantidadBaldes: cantidad,
+        precioUnitario: precioBalde, total, estadoPago, turno: pedido.turnoElegido || pedido.turno || pedido.fechaHora || '',
+        notaEntrega: pedido.nota || '', fechaRetiro: serverTimestamp(), fechaPago: estadoPago === 'pagado' ? serverTimestamp() : null,
         creadoEn: serverTimestamp()
       });
-
       transaction.update(pedidoRef, {
-        estado: 'Completado',
-        fechaCompletado: serverTimestamp(),
-        recoleccionId: recoleccionRef.id,
-        cantBaldesRetirados: cantidad,
-        precioBaldeAplicado: precioBalde,
-        totalRecoleccion: total,
-        estadoPago
+        estado: 'Completado', fechaCompletado: serverTimestamp(), recoleccionId: recoleccionRef.id,
+        cantBaldesRetirados: cantidad, precioBaldeAplicado: precioBalde, totalRecoleccion: total, estadoPago
       });
-
-      if (estadoPago === 'pendiente') {
-        transaction.update(usuarioRef, {
-          saldoPendiente: saldoActual + total
-        });
-      }
+      if (estadoPago === 'pendiente') transaction.update(usuarioRef, { saldoPendiente: saldoActual + total });
     });
 
-    Swal.fire({
-      icon: 'success',
-      title: estadoPago === 'pendiente' ? 'Retiro registrado con saldo pendiente' : 'Retiro registrado y cobrado',
-      html: `<strong>Total: ${formatearMoneda(total)}</strong>`,
-      timer: 1800,
-      showConfirmButton: false
-    });
-
+    Swal.fire({ icon: 'success', title: estadoPago === 'pendiente' ? 'Retiro registrado con saldo pendiente' : 'Retiro registrado y cobrado', html: `<strong>Total: ${formatearMoneda(total)}</strong>`, timer: 1800, showConfirmButton: false });
     cargarPedidosAdmin();
     await cargarClientesIniciales();
     renderizarListaCompletaClientes();
@@ -1631,14 +1797,8 @@ window.marcarPedidoCompletado = async function (pedidoId) {
 };
 
 window.descargarHojaDeRutaCSV = function () {
-  if (!ultimosPedidosHojaRuta || ultimosPedidosHojaRuta.length === 0) {
-    Swal.fire('Atención', 'No hay pedidos de retiro pendientes para descargar.', 'warning');
-    return;
-  }
-
-  let csvContent = "\uFEFF";
-  csvContent += "Zona;Cliente;Celular;Direccion;Turno;Cant. Baldes;Precio por balde ($);Saldo anterior ($);Nota/Entrega;Estado\r\n";
-
+  if (!ultimosPedidosHojaRuta || ultimosPedidosHojaRuta.length === 0) { Swal.fire('Atención', 'No hay pedidos de retiro pendientes para descargar.', 'warning'); return; }
+  let csvContent = "\uFEFFZona;Cliente;Celular;Direccion;Turno;Cant. Baldes;Precio por balde ($);Saldo anterior ($);Nota/Entrega;Estado\r\n";
   ultimosPedidosHojaRuta.forEach(p => {
     const zona = escaparCSV(p.zona || p.clienteZona || 'General');
     const cliente = escaparCSV(p.nombre || p.clienteNombre || 'Sin nombre');
@@ -1650,10 +1810,8 @@ window.descargarHojaDeRutaCSV = function () {
     const saldoAnterior = Number(p._saldoPendienteActual || 0);
     const nota = escaparCSV(p.nota || p.observaciones || '');
     const estado = escaparCSV(p.estado || 'Pendiente');
-
     csvContent += `"${zona}";"${cliente}";"${celu}";"${direccion}";"${turno}";"${baldes}";"${precioBalde}";"${saldoAnterior}";"${nota}";"${estado}"\r\n`;
   });
-
   descargarArchivoCSV(csvContent, `hoja_de_ruta_${new Date().toISOString().slice(0, 10)}.csv`);
 };
 
@@ -1680,20 +1838,11 @@ async function renderizarListaCompletaClientes(cargarMas = false) {
 
   try {
     const mapaPrecios = await obtenerMapaPreciosZonas();
-
-    // Consulta con límite y cursor de paginación
-    let qClientes = query(
-      collection(db, 'usuarios'),
-      limit(TAMANIO_PAGINA_CLIENTES)
-    );
+    let qClientes = query(collection(db, 'usuarios'), limit(TAMANIO_PAGINA_CLIENTES));
 
     if (cargarMas && ultimoDocClientePaginado) {
       const { startAfter } = await import("firebase/firestore");
-      qClientes = query(
-        collection(db, 'usuarios'),
-        startAfter(ultimoDocClientePaginado),
-        limit(TAMANIO_PAGINA_CLIENTES)
-      );
+      qClientes = query(collection(db, 'usuarios'), startAfter(ultimoDocClientePaginado), limit(TAMANIO_PAGINA_CLIENTES));
     }
 
     const snap = await getDocs(qClientes);
@@ -1704,16 +1853,9 @@ async function renderizarListaCompletaClientes(cargarMas = false) {
       return;
     }
 
-    snap.forEach((docSnap) => {
-      if (docSnap.id !== 'admin') {
-        clientesPaginadosCache.push({ id: docSnap.id, ...docSnap.data() });
-      }
-    });
-
-    // Guardar referencia del último documento para el próximo bloque
+    snap.forEach((docSnap) => { if (docSnap.id !== 'admin') clientesPaginadosCache.push({ id: docSnap.id, ...docSnap.data() }); });
     ultimoDocClientePaginado = snap.docs[snap.docs.length - 1] || null;
 
-    // Mostrar u ocultar el botón según si quedan más registros
     if (btnCargarMas) {
       btnCargarMas.disabled = false;
       btnCargarMas.innerHTML = '<i class="ri-arrow-down-line"></i> Cargar más clientes';
@@ -1723,17 +1865,7 @@ async function renderizarListaCompletaClientes(cargarMas = false) {
     let html = `
       <div class="admin-table-scroll">
         <table class="tabla-cuentas-admin tabla-clientes-admin">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>ID / Cel</th>
-              <th>Zona</th>
-              <th>Precio/balde</th>
-              <th>Kilos</th>
-              <th>Baldes</th>
-              <th>Estado de cuenta</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Cliente</th><th>ID / Cel</th><th>Zona</th><th>Precio/balde</th><th>Kilos</th><th>Baldes</th><th>Estado de cuenta</th></tr></thead>
           <tbody>
     `;
 
@@ -1749,18 +1881,12 @@ async function renderizarListaCompletaClientes(cargarMas = false) {
           <td>${precioBalde > 0 ? formatearMoneda(precioBalde) : '<span class="texto-advertencia-cuenta">Sin configurar</span>'}</td>
           <td>${Number(c.totalKilos || 0).toFixed(1)} kg</td>
           <td><i class="ri-archive-line"></i> ${c.baldesCompostados || 0}</td>
-          <td>
-            ${tieneDeuda
-          ? `<span class="badge-cuenta badge-cuenta-pendiente">⚠️ ${formatearMoneda(saldo)} pendiente</span>`
-          : '<span class="badge-cuenta badge-cuenta-ok">✓ Al día</span>'}
-          </td>
+          <td>${tieneDeuda ? `<span class="badge-cuenta badge-cuenta-pendiente">⚠️ ${formatearMoneda(saldo)} pendiente</span>` : '<span class="badge-cuenta badge-cuenta-ok"><i class="ri-check-line"></i> Al día</span>'}</td>
         </tr>
       `;
     });
-
     html += '</tbody></table></div>';
     contenedor.innerHTML = html;
-
   } catch (error) {
     console.error('Error cargando clientes paginados:', error);
     contenedor.innerHTML = '<p class="admin-mensaje-error">Error al cargar la lista de clientes.</p>';
@@ -1773,7 +1899,6 @@ async function renderizarListaCompletaClientes(cargarMas = false) {
 async function cargarEstadoCuentas() {
   const tabla = document.getElementById('tablaEstadoCuentasBody');
   if (!tabla) return;
-
   tabla.innerHTML = '<tr><td colspan="4" class="texto-suave admin-estado-tabla">Cargando estado de cuentas...</td></tr>';
 
   try {
@@ -1784,10 +1909,7 @@ async function cargarEstadoCuentas() {
     ]);
 
     const preciosPorZona = new Map();
-    zonasSnap.forEach(docSnap => {
-      const zona = docSnap.data();
-      preciosPorZona.set(claveZona(zona.nombre), Number(zona.precioBalde || 0));
-    });
+    zonasSnap.forEach(docSnap => { preciosPorZona.set(claveZona(docSnap.data().nombre), Number(docSnap.data().precioBalde || 0)); });
 
     const pendientesPorCliente = new Map();
     recoleccionesSnap.forEach(docSnap => {
@@ -1800,30 +1922,20 @@ async function cargarEstadoCuentas() {
     usuariosSnap.forEach(docSnap => {
       if (docSnap.id === 'admin') return;
       const c = { id: docSnap.id, ...docSnap.data() };
-      const pendientes = (pendientesPorCliente.get(c.id) || []).sort(
-        (a, b) => (b.fechaRetiro?.seconds || 0) - (a.fechaRetiro?.seconds || 0)
-      );
+      const pendientes = (pendientesPorCliente.get(c.id) || []).sort((a, b) => (b.fechaRetiro?.seconds || 0) - (a.fechaRetiro?.seconds || 0));
       const saldoPorRetiros = pendientes.reduce((acc, r) => acc + Number(r.total || 0), 0);
       const saldoGuardado = Number(c.saldoPendiente || 0);
-
       const saldo = Math.max(saldoPorRetiros, saldoGuardado);
       const saldoSinDetalle = Math.max(0, saldoGuardado - saldoPorRetiros);
 
       clientes.push({
-        ...c,
-        precioBaldeActual: Number(preciosPorZona.get(claveZona(c.zona)) || 0),
-        retirosPendientes: pendientes.length,
-        baldesAdeudados: pendientes.reduce((acc, r) => acc + Number(r.cantidadBaldes || 0), 0),
-        saldoPorRetiros,
-        saldoGuardado,
-        saldoSinDetalle,
-        pendientesDetalle: pendientes,
-        saldoCuenta: saldo
+        ...c, precioBaldeActual: Number(preciosPorZona.get(claveZona(c.zona)) || 0), retirosPendientes: pendientes.length,
+        baldesAdeudados: pendientes.reduce((acc, r) => acc + Number(r.cantidadBaldes || 0), 0), saldoPorRetiros, saldoGuardado,
+        saldoSinDetalle, pendientesDetalle: pendientes, saldoCuenta: saldo
       });
     });
 
     datosEstadoCuentas = clientes;
-
     const conDeuda = clientes.filter(c => Number(c.saldoCuenta || 0) > 0);
     const alDia = clientes.length - conDeuda.length;
     const totalPendiente = conDeuda.reduce((acc, c) => acc + Number(c.saldoCuenta || 0), 0);
@@ -1847,32 +1959,23 @@ async function cargarEstadoCuentas() {
 function renderizarEstadoCuentasFiltrado() {
   const tbody = document.getElementById('tablaEstadoCuentasBody');
   if (!tbody) return;
-
-  document.querySelectorAll('[data-filtro-cuenta]').forEach(btn => {
-    btn.classList.toggle('activo', btn.dataset.filtroCuenta === filtroEstadoCuentas);
-  });
-
+  document.querySelectorAll('[data-filtro-cuenta]').forEach(btn => { btn.classList.toggle('activo', btn.dataset.filtroCuenta === filtroEstadoCuentas); });
   let lista = [...datosEstadoCuentas];
   if (filtroEstadoCuentas === 'pendientes') lista = lista.filter(c => Number(c.saldoCuenta || 0) > 0);
   if (filtroEstadoCuentas === 'aldia') lista = lista.filter(c => Number(c.saldoCuenta || 0) <= 0);
-
   lista.sort((a, b) => {
     const deudaDiff = Number(b.saldoCuenta || 0) - Number(a.saldoCuenta || 0);
     if (deudaDiff !== 0) return deudaDiff;
     return (a.nombre || '').localeCompare(b.nombre || '');
   });
 
-  if (lista.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="texto-suave admin-estado-tabla">No hay clientes para este filtro.</td></tr>';
-    return;
-  }
+  if (lista.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="texto-suave admin-estado-tabla">No hay clientes para este filtro.</td></tr>'; return; }
 
   tbody.innerHTML = lista.map(c => {
     const saldo = Number(c.saldoCuenta || 0);
     const tieneDeuda = saldo > 0;
     const pendientes = Array.isArray(c.pendientesDetalle) ? c.pendientesDetalle : [];
     const diferencia = Number(c.saldoSinDetalle || 0);
-
     const detalleRetiros = pendientes.length
       ? pendientes.map(r => `
           <div class="item-detalle-cuenta-inline">
@@ -1884,23 +1987,13 @@ function renderizarEstadoCuentasFiltrado() {
           </div>
         `).join('')
       : '<p class="texto-suave admin-sin-detalle">No hay retiros pendientes con detalle registrado.</p>';
-
-    const avisoDiferencia = diferencia > 0
-      ? `<div class="aviso-diferencia-saldo">
-          <i class="ri-alert-line"></i>
-          <span>Hay ${formatearMoneda(diferencia)} de saldo pendiente sin una recolección asociada. Puede corresponder a datos de prueba anteriores.</span>
-        </div>`
-      : '';
+    const avisoDiferencia = diferencia > 0 ? `<div class="aviso-diferencia-saldo"><i class="ri-alert-line"></i><span>Hay ${formatearMoneda(diferencia)} de saldo pendiente sin una recolección asociada.</span></div>` : '';
 
     return `
       <tr class="fila-cuenta-resumen ${tieneDeuda ? 'fila-cuenta-pendiente' : 'fila-cuenta-aldia'}">
-        <td class="celda-cuenta-cliente" title="${c.nombre || 'Sin nombre'}">
-          <strong>${c.nombre || 'Sin nombre'}</strong>
-        </td>
+        <td class="celda-cuenta-cliente" title="${c.nombre || 'Sin nombre'}"><strong>${c.nombre || 'Sin nombre'}</strong></td>
         <td class="celda-cuenta-zona" title="${c.zona || 'General'}">${c.zona || 'General'}</td>
-        <td class="celda-saldo-total-cuenta">${tieneDeuda
-        ? `<span class="saldo-total-cuenta">${formatearMoneda(saldo)}</span>`
-        : '<span class="badge-cuenta badge-cuenta-ok">Al día</span>'}</td>
+        <td class="celda-saldo-total-cuenta">${tieneDeuda ? `<span class="saldo-total-cuenta">${formatearMoneda(saldo)}</span>` : '<span class="badge-cuenta badge-cuenta-ok"><i class="ri-check-line"></i> Al día</span>'}</td>
         <td class="celda-cuenta-accion">
           <button type="button" class="btn-ver-cuenta" onclick="toggleDetalleCuentaInline('${c.id}', this)" aria-expanded="false">
             <i class="ri-arrow-down-s-line"></i> Ver más${tieneDeuda && c.retirosPendientes ? ` (${c.retirosPendientes})` : ''}
@@ -1909,11 +2002,7 @@ function renderizarEstadoCuentasFiltrado() {
       </tr>
       <tr id="detalle-cuenta-${c.id}" class="fila-detalle-cuenta-inline" hidden>
         <td colspan="4" class="celda-cuenta-detalle-inline">
-          <div class="cabecera-detalle-cuenta-inline">
-            <span>Detalle de ${c.nombre || 'cliente'}</span>
-            <strong>${tieneDeuda ? `Total: ${formatearMoneda(saldo)}` : 'Cuenta al día'}</strong>
-          </div>
-
+          <div class="cabecera-detalle-cuenta-inline"><span>Detalle de ${c.nombre || 'cliente'}</span><strong>${tieneDeuda ? `Total: ${formatearMoneda(saldo)}` : 'Cuenta al día'}</strong></div>
           <div class="resumen-detalle-cuenta-inline">
             <div><span>ID / Cel.</span><strong>${c.id}</strong></div>
             <div><span>Zona</span><strong>${c.zona || 'General'}</strong></div>
@@ -1921,12 +2010,9 @@ function renderizarEstadoCuentasFiltrado() {
             <div><span>Retiros pendientes</span><strong>${c.retirosPendientes || 0}</strong></div>
             <div><span>Baldes adeudados</span><strong>${c.baldesAdeudados || 0}</strong></div>
           </div>
-
           ${tieneDeuda ? detalleRetiros : '<p class="cuenta-al-dia-detalle"><i class="ri-checkbox-circle-line"></i> Este cliente no tiene saldo pendiente.</p>'}
           ${avisoDiferencia}
-          ${tieneDeuda ? `<button type="button" class="btn-gestionar-cuenta-inline" onclick="abrirDetalleCuentaCliente('${c.id}')">
-            <i class="ri-settings-3-line"></i> Gestionar pagos
-          </button>` : ''}
+          ${tieneDeuda ? `<button type="button" class="btn-gestionar-cuenta-inline" onclick="abrirDetalleCuentaCliente('${c.id}')"><i class="ri-settings-3-line"></i> Gestionar pagos</button>` : ''}
         </td>
       </tr>
     `;
@@ -1936,11 +2022,8 @@ function renderizarEstadoCuentasFiltrado() {
 window.toggleDetalleCuentaInline = function (clienteId, boton) {
   const detalle = document.getElementById(`detalle-cuenta-${clienteId}`);
   if (!detalle) return;
-
   const abrir = detalle.hasAttribute('hidden');
-  if (abrir) detalle.removeAttribute('hidden');
-  else detalle.setAttribute('hidden', '');
-
+  if (abrir) detalle.removeAttribute('hidden'); else detalle.setAttribute('hidden', '');
   if (boton) {
     boton.setAttribute('aria-expanded', abrir ? 'true' : 'false');
     const icono = boton.querySelector('i');
@@ -1957,13 +2040,8 @@ window.filtrarEstadoCuentas = function (filtro) {
 window.abrirDetalleCuentaCliente = async function (clienteId) {
   try {
     const clienteSnap = await getDoc(doc(db, 'usuarios', clienteId));
-    if (!clienteSnap.exists()) {
-      Swal.fire('Atención', 'El cliente ya no existe.', 'warning');
-      return;
-    }
-
+    if (!clienteSnap.exists()) { Swal.fire('Atención', 'El cliente ya no existe.', 'warning'); return; }
     seleccionarCliente({ id: clienteSnap.id, ...clienteSnap.data() });
-
     const contenido = document.getElementById('acc-buscar');
     const header = contenido?.previousElementSibling;
     if (contenido) contenido.classList.add('abierto');
@@ -1978,47 +2056,23 @@ window.abrirDetalleCuentaCliente = async function (clienteId) {
 // ==========================================================
 // 10. EXPORTACIONES CSV COMPLETAS
 // ==========================================================
-// ==========================================================
-// EXPORTACIÓN DE CLIENTES A CSV (CON PROMEDIO DE LLENADO)
-// ==========================================================
 window.descargarClientesCSV = async function () {
   try {
-    const [usuariosSnap, preciosPorZona] = await Promise.all([
-      getDocs(collection(db, 'usuarios')),
-      obtenerMapaPreciosZonas()
-    ]);
-
+    const [usuariosSnap, preciosPorZona] = await Promise.all([getDocs(collection(db, 'usuarios')), obtenerMapaPreciosZonas()]);
     const clientes = [];
-    usuariosSnap.forEach((docSnap) => {
-      if (docSnap.id !== 'admin') clientes.push({ id: docSnap.id, ...docSnap.data() });
-    });
-
-    if (clientes.length === 0) {
-      Swal.fire('Atención', 'No hay clientes registrados para descargar.', 'warning');
-      return;
-    }
-
+    usuariosSnap.forEach((docSnap) => { if (docSnap.id !== 'admin') clientes.push({ id: docSnap.id, ...docSnap.data() }); });
+    if (clientes.length === 0) { Swal.fire('Atención', 'No hay clientes registrados para descargar.', 'warning'); return; }
     clientes.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
 
-    let csvContent = '\uFEFF';
-    // 1. Agregamos la columna al encabezado del archivo
-    csvContent += 'Nombre;ID / Celular Principal;Celular Secundario;Zona;Precio por balde ($);Dirección;Fecha Inicio Servicio;Kilos Acumulados;Baldes Compostados;Saldo Pendiente ($);Estado de cuenta;Promedio días llenado\r\n';
-
+    let csvContent = '\uFEFFNombre;ID / Celular Principal;Celular Secundario;Zona;Precio por balde ($);Dirección;Fecha Inicio Servicio;Kilos Acumulados;Baldes Compostados;Saldo Pendiente ($);Estado de cuenta;Promedio días llenado\r\n';
     clientes.forEach(c => {
       const secundario = (c.celularesAsociados && c.celularesAsociados.length > 1) ? c.celularesAsociados[1] : '';
       const saldo = Number(c.saldoPendiente || 0);
       const precioBalde = Number(preciosPorZona.get(claveZona(c.zona)) || 0);
       const estadoCuenta = saldo > 0 ? 'Pendiente' : 'Al día';
-
-      // 2. Leemos el promedio guardado en el cliente (si no tiene, pone "Sin datos")
-      const promedioTexto = c.promedioDiasLlenado
-        ? `${Math.round(c.promedioDiasLlenado)} días`
-        : 'Sin datos';
-
-      // 3. Añadimos el dato al final de la fila
+      const promedioTexto = c.promedioDiasLlenado ? `${Math.round(c.promedioDiasLlenado)} días` : 'Sin datos';
       csvContent += `"${escaparCSV(c.nombre || 'Sin nombre')}";"${escaparCSV(c.id)}";"${escaparCSV(secundario)}";"${escaparCSV(c.zona || 'General')}";"${precioBalde}";"${escaparCSV(c.direccion || 'Sin especificar')}";"${escaparCSV(formatearFechaVista(c.fechaInicioServicio))}";"${Number(c.totalKilos || 0).toFixed(1)}";"${Number(c.baldesCompostados || 0)}";"${saldo}";"${estadoCuenta}";"${escaparCSV(promedioTexto)}"\r\n`;
     });
-
     descargarArchivoCSV(csvContent, `clientes_registrados_${new Date().toISOString().slice(0, 10)}.csv`);
   } catch (error) {
     console.error('Error al exportar la lista de clientes:', error);
@@ -2028,32 +2082,15 @@ window.descargarClientesCSV = async function () {
 
 window.descargarSaldosPendientesCSV = async function () {
   try {
-    const [usuariosSnap, recoleccionesSnap] = await Promise.all([
-      getDocs(collection(db, 'usuarios')),
-      getDocs(query(collection(db, 'recolecciones'), where('estadoPago', '==', 'pendiente')))
-    ]);
-
+    const [usuariosSnap, recoleccionesSnap] = await Promise.all([getDocs(collection(db, 'usuarios')), getDocs(query(collection(db, 'recolecciones'), where('estadoPago', '==', 'pendiente')))]);
     const clientesPorId = new Map();
-    usuariosSnap.forEach(docSnap => {
-      if (docSnap.id !== 'admin') clientesPorId.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
-    });
-
+    usuariosSnap.forEach(docSnap => { if (docSnap.id !== 'admin') clientesPorId.set(docSnap.id, { id: docSnap.id, ...docSnap.data() }); });
     const pendientes = [];
-    recoleccionesSnap.forEach(docSnap => {
-      const r = { id: docSnap.id, ...docSnap.data() };
-      pendientes.push(r);
-    });
-
-    if (pendientes.length === 0) {
-      Swal.fire('Cuenta al día', 'No hay recolecciones pendientes para exportar.', 'success');
-      return;
-    }
+    recoleccionesSnap.forEach(docSnap => { pendientes.push({ id: docSnap.id, ...docSnap.data() }); });
+    if (pendientes.length === 0) { Swal.fire('Cuenta al día', 'No hay recolecciones pendientes para exportar.', 'success'); return; }
 
     const saldoPorCliente = new Map();
-    pendientes.forEach(r => {
-      saldoPorCliente.set(r.clienteId, Number(saldoPorCliente.get(r.clienteId) || 0) + Number(r.total || 0));
-    });
-
+    pendientes.forEach(r => { saldoPorCliente.set(r.clienteId, Number(saldoPorCliente.get(r.clienteId) || 0) + Number(r.total || 0)); });
     pendientes.sort((a, b) => {
       const clienteA = clientesPorId.get(a.clienteId)?.nombre || a.clienteNombre || '';
       const clienteB = clientesPorId.get(b.clienteId)?.nombre || b.clienteNombre || '';
@@ -2062,18 +2099,14 @@ window.descargarSaldosPendientesCSV = async function () {
       return Number(a.fechaRetiro?.seconds || 0) - Number(b.fechaRetiro?.seconds || 0);
     });
 
-    let csvContent = '\uFEFF';
-    csvContent += 'Cliente;Celular;Zona;Fecha retiro;Baldes adeudados;Precio por balde ($);Total retiro ($);Saldo total cliente ($);Estado\r\n';
-
+    let csvContent = '\uFEFFCliente;Celular;Zona;Fecha retiro;Baldes adeudados;Precio por balde ($);Total retiro ($);Saldo total cliente ($);Estado\r\n';
     pendientes.forEach(r => {
       const cliente = clientesPorId.get(r.clienteId) || {};
       const nombre = cliente.nombre || r.clienteNombre || 'Sin nombre';
       const zona = r.zona || cliente.zona || 'General';
       const saldoTotal = Number(saldoPorCliente.get(r.clienteId) || 0);
-
       csvContent += `"${escaparCSV(nombre)}";"${escaparCSV(r.clienteId || '')}";"${escaparCSV(zona)}";"${escaparCSV(formatearFechaTimestamp(r.fechaRetiro))}";"${Number(r.cantidadBaldes || 0)}";"${Number(r.precioUnitario || 0)}";"${Number(r.total || 0)}";"${saldoTotal}";"Pendiente"\r\n`;
     });
-
     descargarArchivoCSV(csvContent, `saldos_pendientes_${new Date().toISOString().slice(0, 10)}.csv`);
   } catch (error) {
     console.error('Error exportando saldos pendientes:', error);
@@ -2081,32 +2114,15 @@ window.descargarSaldosPendientesCSV = async function () {
   }
 };
 
-// ==========================================================
-// DESCARGA DE HISTORIAL DE RETIROS DE BALDES (CSV) CON KILOS
-// ==========================================================
 window.descargarHistorialBaldesCSV = async function () {
   const btn = document.getElementById('btnDescargarHistorialBaldesCSV');
   try {
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i class="ri-loader-4-line"></i> Descargando...';
-    }
-
-    const qRecolecciones = query(
-      collection(db, "recolecciones"),
-      orderBy("fechaRetiro", "desc")
-    );
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line"></i> Descargando...'; }
+    const qRecolecciones = query(collection(db, "recolecciones"), orderBy("fechaRetiro", "desc"));
     const snap = await getDocs(qRecolecciones);
+    if (snap.empty) { Swal.fire('Sin movimientos', 'Todavía no hay retiros de baldes registrados en el sistema.', 'info'); return; }
 
-    if (snap.empty) {
-      Swal.fire('Sin movimientos', 'Todavía no hay retiros de baldes registrados en el sistema.', 'info');
-      return;
-    }
-
-    let csvContent = '\uFEFF'; 
-    // 👇 Agregamos la columna "Kilos" en el encabezado
-    csvContent += 'Fecha Retiro;Cliente;ID / Celular;Zona;Baldes Retirados;Kilos;Precio Unitario ($);Total ($);Estado del Pago;Turno;Nota Entrega\r\n';
-
+    let csvContent = '\uFEFFFecha Retiro;Cliente;ID / Celular;Zona;Baldes Retirados;Kilos;Precio Unitario ($);Total ($);Estado del Pago;Turno;Nota Entrega\r\n';
     snap.forEach((docSnap) => {
       const r = docSnap.data();
       const fecha = escaparCSV(formatearFechaTimestamp(r.fechaRetiro));
@@ -2114,36 +2130,22 @@ window.descargarHistorialBaldesCSV = async function () {
       const celu = escaparCSV(r.clienteId || '');
       const zona = escaparCSV(r.zona || 'General');
       const baldes = Number(r.cantidadBaldes || 1);
-      const kilos = Number(r.kilos || 0); // 👈 Leemos los kilos registrados
+      const kilos = Number(r.kilos || 0);
       const precio = Number(r.precioUnitario || 0);
       const total = Number(r.total || 0);
       const estado = escaparCSV(r.estadoPago || 'pendiente');
       const turno = escaparCSV(r.turno || '');
       const nota = escaparCSV(r.notaEntrega || '');
-
-      // Formateamos los kilos (si no se pesó, muestra 'Sin pesar')
       const kilosTexto = kilos > 0 ? `${kilos.toFixed(1)} kg` : 'Sin pesar';
-
       csvContent += `"${fecha}";"${cliente}";"${celu}";"${zona}";"${baldes}";"${kilosTexto}";"${precio}";"${total}";"${estado}";"${turno}";"${nota}"\r\n`;
     });
-
     descargarArchivoCSV(csvContent, `historial_retiro_baldes_${new Date().toISOString().slice(0, 10)}.csv`);
-
-    Swal.fire({
-      icon: 'success',
-      title: '¡Historial descargado!',
-      text: 'Se generó la planilla con el registro histórico de retiros y kilos.',
-      confirmButtonColor: '#16a34a'
-    });
-
+    Swal.fire({ icon: 'success', title: '¡Historial descargado!', text: 'Se generó la planilla con el registro histórico de retiros y kilos.', confirmButtonColor: '#16a34a' });
   } catch (error) {
     console.error('Error al exportar historial de baldes:', error);
     Swal.fire('Error', 'No se pudo descargar el archivo de historial.', 'error');
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ri-history-line"></i> Descargar Historial Baldes (CSV)';
-    }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ri-history-line"></i> Descargar Historial Baldes (CSV)'; }
   }
 };
 
@@ -2152,11 +2154,7 @@ window.descargarHistorialBaldesCSV = async function () {
 // ==========================================================
 async function descargarStoryClienteSeleccionado() {
   const clienteId = document.getElementById('clienteSeleccionadoId')?.value;
-  if (!clienteId) {
-    Swal.fire('Atención', 'Primero seleccioná un cliente en el buscador.', 'warning');
-    return;
-  }
-
+  if (!clienteId) { Swal.fire('Atención', 'Primero seleccioná un cliente en el buscador.', 'warning'); return; }
   const btn = document.getElementById('btnDescargarStoryAdmin');
   const storyElem = document.getElementById('plantillaStoryAdmin');
   const anioSeleccionado = document.getElementById('selectAnioStoryAdmin')?.value || 'historico';
@@ -2164,11 +2162,7 @@ async function descargarStoryClienteSeleccionado() {
 
   try {
     const docSnap = await getDoc(doc(db, "usuarios", clienteId));
-    if (!docSnap.exists()) {
-      Swal.fire('Error', 'No se encontraron los datos del cliente.', 'error');
-      return;
-    }
-
+    if (!docSnap.exists()) { Swal.fire('Error', 'No se encontraron los datos del cliente.', 'error'); return; }
     const c = docSnap.data();
     const primerNombre = (c.nombre || "Vecino/a").trim().split(" ")[0];
 
@@ -2176,104 +2170,52 @@ async function descargarStoryClienteSeleccionado() {
     if (c.fechaInicioServicio && c.fechaInicioServicio !== "Sin registrar") {
       let fechaIni = null;
       const strFecha = c.fechaInicioServicio.trim();
-
       if (strFecha.includes('/')) {
-        // Viene como M/D/YYYY o MM/DD/YYYY
         const partes = strFecha.split('/');
-        if (partes.length === 3) {
-          const mes = parseInt(partes[0], 10) - 1;
-          const dia = parseInt(partes[1], 10);
-          const anio = parseInt(partes[2], 10);
-          fechaIni = new Date(anio, mes, dia);
-        }
+        if (partes.length === 3) fechaIni = new Date(parseInt(partes[2], 10), parseInt(partes[0], 10) - 1, parseInt(partes[1], 10));
       } else if (strFecha.includes('-')) {
-        // Viene como YYYY-MM-DD
         const partes = strFecha.split('-');
-        if (partes.length === 3) {
-          const anio = parseInt(partes[0], 10);
-          const mes = parseInt(partes[1], 10) - 1;
-          const dia = parseInt(partes[2], 10);
-          fechaIni = new Date(anio, mes, dia);
-        }
+        if (partes.length === 3) fechaIni = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
       }
-
-      if (fechaIni && !isNaN(fechaIni.getTime())) {
-        const hoy = new Date();
-        const diffMs = hoy - fechaIni;
-        diasCompostando = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-      }
+      if (fechaIni && !isNaN(fechaIni.getTime())) diasCompostando = Math.max(0, Math.floor((new Date() - fechaIni) / (1000 * 60 * 60 * 24)));
     }
 
     let kilosMostrar = 0;
     let baldesMostrar = 0;
-
     if (anioSeleccionado === 'historico') {
       kilosMostrar = Number(c.totalKilos || 0);
       baldesMostrar = c.baldesCompostados ?? c.totalBaldes ?? 0;
       const elAnio = document.getElementById('storyAdminAnioTexto');
       if (elAnio) elAnio.innerText = "histórico";
     } else {
-      const qHistorial = query(
-        collection(db, "historial_impacto"),
-        where("clienteId", "==", clienteId),
-        where("anio", "==", anioSeleccionado)
-      );
+      const qHistorial = query(collection(db, "historial_impacto"), where("clienteId", "==", clienteId), where("anio", "==", anioSeleccionado));
       const histSnap = await getDocs(qHistorial);
-      histSnap.forEach(d => {
-        kilosMostrar += Number(d.data().kilos || 0);
-        baldesMostrar += Number(d.data().baldes || 0);
-      });
+      histSnap.forEach(d => { kilosMostrar += Number(d.data().kilos || 0); baldesMostrar += Number(d.data().baldes || 0); });
       const elAnio = document.getElementById('storyAdminAnioTexto');
       if (elAnio) elAnio.innerText = "del " + anioSeleccionado;
     }
 
     const compostMostrar = Math.round(kilosMostrar / 3);
-
     document.getElementById('storyAdminNombre').innerText = primerNombre;
     document.getElementById('storyAdminDias').innerText = `${diasCompostando} días`;
     document.getElementById('storyAdminBaldes').innerText = `${baldesMostrar} baldes`;
     document.getElementById('storyAdminKilos').innerText = `${kilosMostrar.toFixed(0)} kg de orgánicos`;
     document.getElementById('storyAdminCompost').innerText = `${compostMostrar} kg de compost`;
 
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i class="ri-loader-4-line"></i> Generando...';
-    }
-
-    // 🟢 Importación dinámica de html2canvas justo en el momento del click
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line"></i> Generando...'; }
     const html2canvasModule = await import('html2canvas');
     const html2canvas = html2canvasModule.default;
-
-    const canvas = await html2canvas(storyElem, {
-      scale: 1,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      windowWidth: 1080,
-      windowHeight: 1920
-    });
-
+    const canvas = await html2canvas(storyElem, { scale: 1, useCORS: true, allowTaint: true, logging: false, windowWidth: 1080, windowHeight: 1920 });
     const enlace = document.createElement('a');
-    const sufijoArchivo = anioSeleccionado === 'historico' ? 'total' : anioSeleccionado;
-    enlace.download = `impacto_${primerNombre.toLowerCase()}_${sufijoArchivo}.png`;
+    enlace.download = `impacto_${primerNombre.toLowerCase()}_${anioSeleccionado === 'historico' ? 'total' : anioSeleccionado}.png`;
     enlace.href = canvas.toDataURL('image/png');
     enlace.click();
-
-    Swal.fire({
-      icon: 'success',
-      title: '¡Story generada!',
-      text: `Se descargó el resumen de ${primerNombre} listo para enviar por WhatsApp.`,
-      confirmButtonColor: '#16a34a'
-    });
-
+    Swal.fire({ icon: 'success', title: '¡Story generada!', text: `Se descargó el resumen de ${primerNombre} listo para enviar por WhatsApp.`, confirmButtonColor: '#16a34a' });
   } catch (error) {
     console.error('Error generando story desde admin:', error);
     Swal.fire('Error', 'No se pudo generar la imagen.', 'error');
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ri-download-2-line"></i> Descargar Imagen';
-    }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ri-download-2-line"></i> Descargar Imagen'; }
   }
 }
 
@@ -2287,88 +2229,51 @@ async function descargarStoryGlobal() {
   if (!storyElem) return;
 
   try {
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i class="ri-loader-4-line"></i> Generando...';
-    }
-
-    let sumaKilos = 0;
-    let sumaBaldes = 0;
-    let familiasActivas = 0;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line"></i> Generando...'; }
+    let sumaKilos = 0, sumaBaldes = 0, familiasActivas = 0;
 
     if (anioSeleccionado === 'historico') {
       const querySnapshot = await getDocs(collection(db, "usuarios"));
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        if (docSnap.id !== "admin") {
-          familiasActivas++;
-          sumaKilos += Number(data.totalKilos || 0);
-          sumaBaldes += Number(data.baldesCompostados || data.totalBaldes || 0);
-        }
+        if (docSnap.id !== "admin") { familiasActivas++; sumaKilos += Number(data.totalKilos || 0); sumaBaldes += Number(data.baldesCompostados || data.totalBaldes || 0); }
       });
       const elAnio = document.getElementById('storyGlobalAnioTexto');
       if (elAnio) elAnio.innerText = "hasta hoy";
     } else {
-      const qHistorial = query(
-        collection(db, "historial_impacto"),
-        where("anio", "==", anioSeleccionado)
-      );
+      const qHistorial = query(collection(db, "historial_impacto"), where("anio", "==", anioSeleccionado));
       const histSnap = await getDocs(qHistorial);
       const clientesUnicos = new Set();
-
       histSnap.forEach((docSnap) => {
         const d = docSnap.data();
         sumaKilos += Number(d.kilos || 0);
         sumaBaldes += Number(d.baldes || 0);
         if (d.clienteId) clientesUnicos.add(d.clienteId);
       });
-
       familiasActivas = clientesUnicos.size;
       const elAnio = document.getElementById('storyGlobalAnioTexto');
       if (elAnio) elAnio.innerText = "en el " + anioSeleccionado;
     }
 
     const compostGenerado = Math.round(sumaKilos / 3);
-
     document.getElementById('storyGlobalFamilias').innerText = familiasActivas;
     document.getElementById('storyGlobalKilos').innerText = `${Math.round(sumaKilos)} kg`;
     document.getElementById('storyGlobalBaldes').innerText = sumaBaldes;
     document.getElementById('storyGlobalCompost').innerText = `${compostGenerado} kg`;
 
-    // 🟢 Importación dinámica de html2canvas para la Story Global
     const html2canvasModule = await import('html2canvas');
     const html2canvas = html2canvasModule.default;
-
-    const canvas = await html2canvas(storyElem, {
-      scale: 1,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      windowWidth: 1080,
-      windowHeight: 1920
-    });
-
+    const canvas = await html2canvas(storyElem, { scale: 1, useCORS: true, allowTaint: true, logging: false, windowWidth: 1080, windowHeight: 1920 });
     const enlace = document.createElement('a');
-    const sufijo = anioSeleccionado === 'historico' ? 'total' : anioSeleccionado;
-    enlace.download = `impacto_global_zdc_${sufijo}.png`;
+    enlace.download = `impacto_global_zdc_${anioSeleccionado === 'historico' ? 'total' : anioSeleccionado}.png`;
     enlace.href = canvas.toDataURL('image/png');
     enlace.click();
-
-    Swal.fire({
-      icon: 'success',
-      title: '¡Story Global generada!',
-      text: `Se descargó la imagen del impacto comunitario (${anioSeleccionado}) lista para compartir.`,
-      confirmButtonColor: '#16a34a'
-    });
-
+    Swal.fire({ icon: 'success', title: '¡Story Global generada!', text: `Se descargó la imagen del impacto comunitario (${anioSeleccionado}) lista para compartir.`, confirmButtonColor: '#16a34a' });
   } catch (error) {
     console.error('Error generando story global:', error);
     Swal.fire('Error', 'No se pudo generar la imagen global.', 'error');
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ri-instagram-line"></i> Story Global';
-    }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ri-instagram-line"></i> Story Global'; }
   }
 }
 
@@ -2384,7 +2289,6 @@ async function inicializarPanelAdmin() {
   cargarTurnosAdmin();
   cargarPedidosAdmin();
   renderizarListaCompletaClientes();
-  //cargarEstadoCuentas();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -2409,10 +2313,8 @@ window.addEventListener('DOMContentLoaded', () => {
     renderizarListaCompletaClientes(true);
   });
 
-  // 🟢 ACÁ AGREGÁS LA CARGA BAJO DEMANDA (Lazy Loading):
   let estadoCuentasYaCargado = false;
   const botonAcordeonCuentas = document.querySelector('button[onclick*="acc-cuentas"]');
-
   if (botonAcordeonCuentas) {
     botonAcordeonCuentas.addEventListener("click", () => {
       if (!estadoCuentasYaCargado) {
@@ -2421,4 +2323,12 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // 🟢 ESCUCHADORES DE CONTROL MENSUAL Y CARGA
+  document.getElementById('btnSumarKilosYBaldes')?.addEventListener('click', ejecutarRegistroRetiroManual);
+  document.getElementById('btnRefrescarControlMensual')?.addEventListener('click', cargarResumenMensualEze);
+  document.getElementById('btnDescargarControlMensualCSV')?.addEventListener('click', descargarControlMensualCSV);
+  document.getElementById('inputFiltroMesControl')?.addEventListener('change', cargarResumenMensualEze);
+
+  cargarResumenMensualEze();
 });

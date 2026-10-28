@@ -138,43 +138,50 @@
             </div>
           </div>
 
+          <!-- 🟢 SECCIÓN RECIÉN ACTUALIZADA: CARGA Y NUEVO HISTORIAL DEL CLIENTE -->
           <div class="admin-panel-operativo">
             <h4 class="admin-subtitulo admin-subtitulo--oscuro">
-              <i class="ri-recycle-line"></i> Carga manual de Kilos y Baldes
+              <i class="ri-recycle-line"></i> Carga de Recolección / Baldes
             </h4>
 
             <div class="admin-grid-2">
               <div class="form-group">
-                <label for="kilosASumarInput">Kilos A Sumar:</label>
+                <label for="kilosASumarInput" style="font-weight: 600; color: #15803d;">⚖️ Kilos recolectados:</label>
                 <input type="number" step="0.1" id="kilosASumarInput" class="form-control" value="0">
               </div>
               <div class="form-group">
-                <label for="baldesASumarInput">Baldes A Sumar:</label>
-                <input type="number" step="1" id="baldesASumarInput" class="form-control" value="0">
+                <label for="baldesASumarInput" style="font-weight: 600; color: #b45309;">🪣 Cantidad de baldes:</label>
+                <input type="number" step="1" id="baldesASumarInput" class="form-control" value="1">
               </div>
             </div>
 
-            <!-- 👇 CAMPOS NUEVOS EN GRID DE 2 COLUMNAS CON TUS CLASES 👇 -->
             <div class="admin-grid-2" style="margin-top: 10px;">
               <div class="form-group">
-                <label for="fechaRetiroManualInput">Fecha exacta del retiro:</label>
+                <label for="fechaRetiroManualInput">📅 Fecha del retiro:</label>
                 <input type="date" id="fechaRetiroManualInput" class="form-control">
               </div>
-
               <div class="form-group">
-                <label for="estadoPagoManualInput">Estado del pago:</label>
+                <label for="estadoPagoManualInput">💳 Estado del pago:</label>
                 <select id="estadoPagoManualInput" class="form-control">
                   <option value="pagado">✅ Pagado en el momento</option>
                   <option value="pendiente">⏳ Pendiente de Pago (Anotar en cuenta)</option>
                 </select>
               </div>
             </div>
-            <!-- 👆 FIN DE CAMPOS NUEVOS 👆 -->
 
-            <button type="button" id="btnSumarKilosYBaldes" class="btn-app btn-app-accion admin-btn-ancho-completo"
-              style="margin-top: 15px;">
-              <i class="ri-add-circle-line"></i> Registrar Retiro Manual
+            <button type="button" id="btnSumarKilosYBaldes" class="btn-app btn-app-accion admin-btn-ancho-completo" style="margin-top: 15px;">
+              <i class="ri-add-circle-line"></i> Registrar Retiro
             </button>
+
+            <!-- HISTORIAL RECIENTE EDITABLE DEL CLIENTE SELECCIONADO -->
+            <div style="margin-top: 20px;">
+              <h5 style="margin-bottom: 8px; font-size: 14px; color: #334155;">
+                <i class="ri-history-line"></i> Últimas cargas registradas para este vecino:
+              </h5>
+              <div id="contenedorHistorialCargasCliente">
+                <p class="texto-suave" style="font-size: 13px;">Buscá un vecino para ver sus últimas cargas.</p>
+              </div>
+            </div>
 
             <hr class="admin-separador">
 
@@ -185,6 +192,8 @@
               <p class="texto-suave">Seleccioná un cliente para ver su estado de cuenta.</p>
             </div>
           </div>
+          <!-- 🟢 FIN DE LA SECCIÓN ACTUALIZADA -->
+
         </div>
       </div>
     </div>
@@ -204,7 +213,6 @@
               <i class="ri-download-line"></i> CSV
             </button>
 
-            <!-- 🟢 BOTÓN DE IMPRESIÓN / PDF AQUÍ -->
             <button type="button" class="btn-actualizar-tabla no-print" onclick="window.print()">
               <i class="ri-printer-line"></i> Imprimir
             </button>
@@ -335,7 +343,6 @@
         <div class="admin-clientes-encabezado">
           <span class="admin-clientes-descripcion">Lista general de usuarios:</span>
 
-          <!-- 👇 BARRA DE BOTONES ALINEADA 👇 -->
           <div class="admin-barra-acciones-clientes">
             <button type="button" id="btnDescargarClientesCSV" class="btn-app btn-exportar-csv">
               <i class="ri-file-excel-2-line"></i> Descargar Clientes (CSV)
@@ -361,7 +368,6 @@
               <i class="ri-refresh-line"></i> Actualizar
             </button>
           </div>
-          <!-- 👆 FIN DE BARRA ALINEADA 👆 -->
         </div>
 
         <div id="contenedorListaClientes" class="admin-lista-clientes">
@@ -374,6 +380,7 @@
         </div>
       </div>
     </div>
+
     <!-- ACORDEÓN 6: ESTADO DE CUENTAS -->
     <div class="acordeon-item acordeon-cuentas">
       <button class="acordeon-header" onclick="toggleAcordeon('acc-cuentas', this)">
@@ -468,6 +475,72 @@
         <div id="listaZonasAdmin"></div>
       </div>
     </div>
+
+    <!-- 🟢 ACORDEÓN 8: CONTROL MENSUAL DE RECOLECCIONES (EXCEL DIGITAL) -->
+    <div class="acordeon-item">
+      <button class="acordeon-header" onclick="toggleAcordeon('acc-control-mensual', this)">
+        <span><i class="ri-calendar-check-line icon"></i> Resumen y Control Mensual</span>
+        <i class="ri-arrow-down-s-line icon flecha"></i>
+      </button>
+
+      <div id="acc-control-mensual" class="acordeon-contenido seccion tarjeta-seccion">
+        <div class="encabezado-estado-cuentas">
+          <div>
+            <h3 class="admin-cuentas-titulo">Control de Baldes y Kilos por Mes</h3>
+            <p class="texto-suave admin-cuentas-descripcion">Revisá todo lo que cargaste en el mes y controlá si te faltó registrar algún retiro.</p>
+          </div>
+          <div class="acciones-estado-cuentas" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <input type="month" id="inputFiltroMesControl" class="form-control" style="width: auto; margin-bottom: 0;">
+            <button id="btnDescargarControlMensualCSV" type="button" class="btn-app btn-exportar-csv">
+              <i class="ri-file-excel-2-line"></i> Descargar Mes (CSV)
+            </button>
+            <button id="btnRefrescarControlMensual" type="button" class="btn-app btn-refrescar-cuentas">
+              <i class="ri-refresh-line"></i> Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="resumen-cuentas-grid" style="margin-top: 15px;">
+          <div class="tarjeta-resumen-cuenta">
+            <span>Baldes Cambiados</span>
+            <strong id="controlTotalBaldesMes">0</strong>
+          </div>
+          <div class="tarjeta-resumen-cuenta cuenta-ok">
+            <span>Kilos Recolectados</span>
+            <strong id="controlTotalKilosMes">0 kg</strong>
+          </div>
+          <div class="tarjeta-resumen-cuenta">
+            <span>Retiros Realizados</span>
+            <strong id="controlTotalRegistrosMes">0</strong>
+          </div>
+          <div class="tarjeta-resumen-cuenta cuenta-monto">
+            <span>Monto Total Retiros</span>
+            <strong id="controlTotalMontoMes">$0</strong>
+          </div>
+        </div>
+
+        <div class="contenedor-tabla-elegante" style="margin-top: 15px;">
+          <table class="tabla-admin">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Baldes</th>
+                <th>Kilos</th>
+                <th>Pago</th>
+                <th class="admin-texto-centro">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaControlMensualBody">
+              <tr>
+                <td colspan="6" class="texto-suave admin-estado-tabla">Seleccioná un mes para ver las recolecciones.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- 🟢 FIN ACORDEÓN 8 -->
 
     <!-- TEMPLATES OCULTOS PARA HISTORIAS -->
     <div id="plantillaStoryAdmin">
